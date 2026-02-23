@@ -181,15 +181,15 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
                             <div className="flex justify-between items-end mb-4">
                                 <div>
                                     <p className="text-5xl font-black text-primary tracking-tighter">
-                                        {progressPercentage}%
+                                        {Math.floor(estimatedRemainingSeconds / 60).toString().padStart(2, '0')}:{(estimatedRemainingSeconds % 60).toString().padStart(2, '0')}
                                     </p>
-                                    <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Concluído</p>
+                                    <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Tempo para Encerrar</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-2xl font-black text-muted-text uppercase tracking-tighter">
-                                        {Math.floor(elapsedSeconds / 60).toString().padStart(2, '0')}:{(elapsedSeconds % 60).toString().padStart(2, '0')}
+                                        {progressPercentage}%
                                     </p>
-                                    <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Tempo Decorrido</p>
+                                    <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Concluído</p>
                                 </div>
                             </div>
 
@@ -202,42 +202,40 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
                                 />
                             </div>
 
-                            {campaign.status === 'running' && (
-                                <div className="mt-8 grid grid-cols-2 gap-4">
-                                    {/* Timer Regressivo */}
-                                    <div className="bg-soft/50 py-4 rounded-2xl border border-dashed border-gray-200 flex items-center gap-4 px-6 justify-center">
-                                        <div className="text-center">
-                                            <p className="text-2xl font-black text-muted-text">
-                                                {Math.floor(estimatedRemainingSeconds / 60)}
-                                            </p>
-                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Min</p>
-                                        </div>
-                                        <div className="text-2xl font-black text-gray-300 mb-2">:</div>
-                                        <div className="text-center">
-                                            <p className="text-2xl font-black text-muted-text">
-                                                {(estimatedRemainingSeconds % 60).toString().padStart(2, '0')}
-                                            </p>
-                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Seg</p>
-                                        </div>
-                                        <div className="ml-2 pl-4 border-l border-gray-200">
-                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Faltam para<br />concluir</p>
-                                        </div>
+                            <div className="mt-8 grid grid-cols-2 gap-4">
+                                {/* Timer Decorrido (Secundário) */}
+                                <div className="bg-soft/50 py-4 rounded-2xl border border-dashed border-gray-200 flex items-center gap-4 px-6 justify-center">
+                                    <div className="text-center">
+                                        <p className="text-2xl font-black text-muted-text">
+                                            {Math.floor(elapsedSeconds / 60)}
+                                        </p>
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Min</p>
                                     </div>
-
-                                    {/* Info Auxiliar */}
-                                    <div className="bg-primary/5 py-4 rounded-2xl border border-primary/10 flex items-center gap-4 px-6 justify-center">
-                                        <div className="text-center">
-                                            <p className="text-2xl font-black text-primary">
-                                                {campaign.products_sent} / {campaign.total_products}
-                                            </p>
-                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Produtos</p>
-                                        </div>
-                                        <div className="ml-2 pl-4 border-l border-primary/20">
-                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Enviados<br />na Campanha</p>
-                                        </div>
+                                    <div className="text-2xl font-black text-gray-300 mb-2">:</div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-black text-muted-text">
+                                            {(elapsedSeconds % 60).toString().padStart(2, '0')}
+                                        </p>
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Seg</p>
+                                    </div>
+                                    <div className="ml-2 pl-4 border-l border-gray-200">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Tempo<br />Decorrido</p>
                                     </div>
                                 </div>
-                            )}
+
+                                {/* Info Auxiliar */}
+                                <div className="bg-primary/5 py-4 rounded-2xl border border-primary/10 flex items-center gap-4 px-6 justify-center">
+                                    <div className="text-center">
+                                        <p className="text-2xl font-black text-primary">
+                                            {campaign.products_sent} / {campaign.total_products}
+                                        </p>
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Produtos</p>
+                                    </div>
+                                    <div className="ml-2 pl-4 border-l border-primary/20">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Enviados<br />na Campanha</p>
+                                    </div>
+                                </div>
+                            </div>
                             {campaign.status === 'completed' && (
                                 <p className="text-xs font-bold text-green-600 mt-6 flex items-center justify-center gap-2 bg-green-50 py-3 rounded-xl">
                                     <CheckCircle2 size={16} /> Campanha finalizada com sucesso às {new Date(campaign.completed_at).toLocaleTimeString('pt-BR')}.

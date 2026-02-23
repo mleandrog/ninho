@@ -171,7 +171,8 @@ export async function POST(request: NextRequest) {
                                 }
                             }
 
-                            const leadPhone = participant.replace('@s.whatsapp.net', '');
+                            const jid = data.key?.participantAlt || data.key?.participant || phone;
+                            const leadPhone = jid.split('@')[0];
                             const contactName = data.pushName || leadPhone;
 
                             // Verificar se o lead já participou deste produto nesta campanha
