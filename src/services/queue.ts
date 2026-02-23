@@ -8,6 +8,7 @@ export const queueService = {
      * Adiciona um lead na fila de um produto. Se for o primeiro (ou se a fila estiver vazia de 'processing'), aciona.
      */
     async addToQueue(campaignId: string, productId: number, phone: string, customerName: string, keyword: string) {
+        console.log('[Queue] Adicionando à fila:', { campaignId, productId, phone, customerName });
         try {
             // Verificar se o cliente já está na fila deste produto
             const { data: existing } = await supabase
@@ -36,6 +37,7 @@ export const queueService = {
 
             if (insertError) throw insertError;
 
+            console.log('[Queue] Lead adicionado com sucesso:', phone);
             // Tentar processar a fila (caso ele seja o primeiro e não tenha ninguém processing)
             await this.processNextInQueue(campaignId, productId);
             return { success: true };

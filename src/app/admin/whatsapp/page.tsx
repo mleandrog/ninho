@@ -326,7 +326,7 @@ export default function AdminWhatsAppDashboard() {
                 <header className="flex justify-between items-center mb-12">
                     <div>
                         <h1 className="text-4xl font-black text-muted-text lowercase tracking-tighter">
-                            WhatsApp <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2 align-middle">v1.2.0-FINAL</span>
+                            WhatsApp <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2 align-middle">v1.2.1-DEBUG</span>
                         </h1>
                         <p className="text-gray-400 font-bold mt-1">Gestão de campanhas, grupos e disparos automáticos</p>
                     </div>
@@ -503,49 +503,76 @@ export default function AdminWhatsAppDashboard() {
                         </div>
 
                         {/* Histórico */}
-                        <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8">
-                            <h2 className="text-2xl font-black text-muted-text">Últimas Campanhas</h2>
+                        <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 h-fit">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-2xl font-black text-muted-text">Últimas Campanhas</h2>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={fetchInitialData}
+                                    className="rounded-full text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5"
+                                >
+                                    Atualizar
+                                </Button>
+                            </div>
 
                             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                                {campaigns.map(campaign => (
-                                    <button
-                                        key={campaign.id}
-                                        onClick={() => window.location.href = `/admin/whatsapp/campanhas/${campaign.id}`}
-                                        className="w-full text-left p-6 bg-soft rounded-3xl border-2 border-transparent hover:border-primary/20 hover:bg-primary/5 transition-all group relative"
-                                    >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <span className="text-xs font-black text-gray-400">
-                                                {new Date(campaign.created_at).toLocaleDateString('pt-BR')} às {new Date(campaign.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${campaign.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                                campaign.status === 'running' ? 'bg-blue-100 text-blue-600 animate-pulse' :
-                                                    campaign.status === 'error' ? 'bg-red-100 text-red-600' :
-                                                        'bg-yellow-100 text-yellow-600'
-                                                }`}>
-                                                {campaign.status === 'running' ? 'Em Andamento' :
-                                                    campaign.status === 'completed' ? 'Finalizada' :
-                                                        campaign.status === 'error' ? 'Erro' : 'Pendente'}
-                                            </div>
-                                        </div>
-
-                                        <h3 className="text-xl font-black text-muted-text mb-4 truncate pr-4 group-hover:text-primary transition-colors">
-                                            {campaign.name || campaign.categories?.name || 'Campanha Geral'}
-                                        </h3>
-
-                                        <div className="flex justify-between items-end">
-                                            <div>
-                                                <div className="text-3xl font-black text-muted-text transition-colors">
-                                                    {campaign.products_sent} <span className="text-lg text-gray-400">/ {campaign.total_products}</span>
+                                {campaigns.map(campaign => {
+                                    const progress = campaign.total_products > 0 ? (campaign.products_sent / campaign.total_products) * 100 : 0;
+                                    return (
+                                        <button
+                                            key={campaign.id}
+                                            onClick={() => window.location.href = `/admin/whatsapp/campanhas/${campaign.id}`}
+                                            className="w-full text-left p-8 bg-soft rounded-[2.5rem] border-2 border-transparent hover:border-primary/20 hover:bg-white hover:shadow-xl transition-all group relative overflow-hidden"
+                                        >
+                                            <div className="flex justify-between items-center mb-6">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-2 h-2 rounded-full ${campaign.status === 'running' ? 'bg-blue-500 animate-pulse' :
+                                                        campaign.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'
+                                                        }`} />
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${campaign.status === 'running' ? 'text-blue-600' :
+                                                        campaign.status === 'completed' ? 'text-green-600' : 'text-yellow-600'
+                                                        }`}>
+                                                        {campaign.status === 'running' ? 'Disparando' :
+                                                            campaign.status === 'completed' ? 'Sucesso' : 'Aguardando'}
+                                                    </span>
                                                 </div>
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Produtos Enviados</p>
+                                                <span className="text-[10px] font-bold text-gray-400">
+                                                    {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
+                                                </span>
                                             </div>
 
-                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-                                                <ExternalLink size={18} className="translate-x-0.5" />
+                                            <h3 className="text-xl font-black text-muted-text mb-2 group-hover:text-primary transition-colors truncate">
+                                                {campaign.name || campaign.categories?.name || 'Campanha Geral'}
+                                            </h3>
+
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between items-end">
+                                                    <div>
+                                                        <div className="text-3xl font-black text-muted-text">
+                                                            {campaign.products_sent}<span className="text-sm text-gray-400 font-bold ml-1">/{campaign.total_products}</span>
+                                                        </div>
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Produtos</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-lg font-black text-primary">
+                                                            {Math.round(progress)}%
+                                                        </div>
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Progresso</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="h-2 w-full bg-white rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full transition-all duration-1000 ${campaign.status === 'running' ? 'bg-primary animate-shimmer' : 'bg-primary'
+                                                            }`}
+                                                        style={{ width: `${progress}%` }}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </button>
-                                ))}
+                                        </button>
+                                    );
+                                })}
 
                                 {campaigns.length === 0 && (
                                     <div className="text-center py-12 text-gray-400 font-bold">

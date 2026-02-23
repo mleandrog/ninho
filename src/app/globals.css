@@ -48,31 +48,22 @@
 
   --animate-float: float 3s ease-in-out infinite;
   --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+  --animate-shimmer: shimmer 2s infinite linear;
 
   @keyframes float {
-
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-15px);
-    }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
   }
 
   @keyframes pulse-soft {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.02); }
+  }
 
-    0%,
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    50% {
-      opacity: 0.8;
-      transform: scale(1.02);
-    }
+  @keyframes shimmer {
+    0% { opacity: 0.5; transform: translateX(-100%); }
+    50% { opacity: 1; transform: translateX(0%); }
+    100% { opacity: 0.5; transform: translateX(100%); }
   }
 }
 

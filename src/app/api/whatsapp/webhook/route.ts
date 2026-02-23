@@ -46,6 +46,13 @@ export async function POST(request: NextRequest) {
             }
         });
 
+        console.log('[Webhook] Payload recebido:', JSON.stringify({
+            instance: payload.instance,
+            event: payload.event,
+            remoteJid: payload.data?.key?.remoteJid,
+            participant: payload.data?.key?.participant
+        }, null, 2));
+
         // Extrair dados da mensagem
         const { event, data } = payload;
         if (!event) {
@@ -197,6 +204,13 @@ export async function POST(request: NextRequest) {
 
                                 // Se o produto foi identificado de forma exata, engatilha a fila
                                 if (productId) {
+                                    console.log('[Webhook] Tentando adicionar à fila:', {
+                                        campaignId: campaignData.id,
+                                        productId,
+                                        leadPhone,
+                                        contactName
+                                    });
+
                                     const { queueService } = await import('@/services/queue');
                                     await queueService.addToQueue(
                                         campaignData.id,
