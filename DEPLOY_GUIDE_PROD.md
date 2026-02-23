@@ -33,19 +33,26 @@ git push origin main
 ```
 
 ### 2. No Servidor (Via SSH ou Terminal do Painel)
-Entre na pasta do projeto e rode esta sequência:
+Entre na pasta do projeto e siga esta sequência:
+
 ```bash
-# Entrar na pasta
+# 1. Entrar na pasta
 cd /etc/icontainer/apps/openresty/openresty/www/sites/ninhoelar.com.br/index
 
-# Puxar código novo
+# 2. SE DER ERRO DE "not a git repository", rode este COMANDO DE RESGATE:
+git init
+git remote add origin https://github.com/mleandrog/ninho.git
+git fetch origin
+git reset --hard origin/main
+
+# 3. Puxar código novo (se já for um repositório Git)
 git pull origin main
 
-# Instalar dependências (se necessário) e buildar
+# 4. Instalar dependências e buildar
 npm install
 npm run build
 
-# Reiniciar o processo
+# 5. Reiniciar o processo
 pm2 restart ninho-lar
 ```
 

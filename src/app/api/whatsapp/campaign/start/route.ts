@@ -132,7 +132,8 @@ export async function POST(req: Request) {
 
                 // 8. Enviar mensagem de finalização em todos os grupos
                 const categoryName = campaign.categories?.name || "esta categoria";
-                const endMessage = `🏁 *Campanha Finalizada!* \n\nAgradecemos a todos que participaram dos lançamentos de *${categoryName}*. \n\nFiquem ligados para as próximas novidades! 🧸✨`;
+                const endMessageTemplate = settings?.final_message || `🏁 *Campanha Finalizada!* \n\nAgradecemos a todos que participaram dos lançamentos de *{categoryName}*. \n\nFiquem ligados para as próximas novidades! 🧸✨`;
+                const endMessage = endMessageTemplate.replace(/{categoryName}/g, categoryName);
 
                 console.log(`[Campaign ${campaignId}] Enviando mensagem de finalização para os grupos...`);
                 for (const group of groups) {

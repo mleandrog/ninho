@@ -225,6 +225,7 @@ export default function AdminWhatsAppDashboard() {
                 .update({
                     keyword: settings.keyword,
                     rules_message: settings.rules_message,
+                    final_message: settings.final_message,
                     default_interval_seconds: settings.default_interval_seconds
                 })
                 .eq("id", settings.id);
@@ -398,11 +399,21 @@ export default function AdminWhatsAppDashboard() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras (Início)</label>
                             <textarea
                                 className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-32"
                                 value={settings.rules_message}
                                 onChange={e => setSettings({ ...settings, rules_message: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Finalização (Encerramento)</label>
+                            <textarea
+                                className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-32"
+                                value={settings.final_message}
+                                onChange={e => setSettings({ ...settings, final_message: e.target.value })}
+                                placeholder="Use {categoryName} para incluir o nome da categoria automaticamente."
                             />
                         </div>
 
