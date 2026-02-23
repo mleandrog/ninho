@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #2A2A2A;
+
+  --primary: #FF6B6B;
+  /* Coral Vibrante */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #4ECDC4;
+  /* Aqua Vibrante */
+  --secondary-foreground: #FFFFFF;
+
+  --accent: #FFD93D;
+  /* Amarelo Solar Khelna */
+  --accent-foreground: #2A2A2A;
+
+  --card: #FFFFFF;
+  --card-foreground: #2A2A2A;
+
+  --border: #F0F0F0;
+  --input: #F0F0F0;
+  --ring: #FF6B6B;
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-soft: #F9F9F9;
+  --color-muted-text: #666666;
+
+  --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+  --shadow-vibrant: 0 10px 20px -5px rgba(255, 107, 107, 0.2);
+  --shadow-accent: 0 10px 20px -5px rgba(255, 217, 61, 0.3);
+
+  --radius-2xl: 2rem;
+  --radius-3xl: 3rem;
+  --radius-4xl: 4rem;
+  --radius-full: 9999px;
+
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-15px);
+    }
+  }
+
+  @keyframes pulse-soft {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom Components for the "Khelna" look */
+.hero-blob {
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  background: var(--accent);
+  opacity: 0.2;
+  filter: blur(40px);
+}
+
+.cloud-shape {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  filter: blur(10px);
+}
+
+.premium-card {
+  background-color: white;
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-premium);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.premium-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.08);
+}
+
+.vibrant-button {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-full);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-vibrant);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vibrant-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 15px 30px -5px rgba(255, 107, 107, 0.4);
+}
+
+.category-circle {
+  width: calc(100% - 20px);
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 8px solid white;
+  box-shadow: var(--shadow-premium);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.category-circle:hover {
+  transform: scale(1.1) rotate(5deg);
+}
