@@ -52,8 +52,13 @@ git pull origin main
 npm install
 npm run build
 
-# 5. Reiniciar o processo
-pm2 restart ninho-lar
+# 5. Organizar arquivos (Passo vital para o modo Standalone)
+cp -r public .next/standalone/
+cp -r .next/static .next/standalone/.next/
+
+# 6. Reiniciar o processo (Apontando para a pasta certa)
+pm2 delete ninho-lar
+pm2 start .next/standalone/server.js --name ninho-lar
 ```
 
 > [!IMPORTANT]
