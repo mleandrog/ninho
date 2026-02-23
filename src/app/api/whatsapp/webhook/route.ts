@@ -63,9 +63,11 @@ export async function POST(request: NextRequest) {
         const eventType = event.toUpperCase().replace(/\./g, '_');
 
         // Validar origem (LOGAR MAS NÃO BLOQUEAR POR ENQUANTO)
-        const incomingApiKey = request.headers.get('x-api-key') || payload.apikey;
-        if (incomingApiKey !== process.env.EVOLUTION_API_KEY) {
-            console.warn(`[Webhook] API Key mismatch: ${incomingApiKey}`);
+        const incomingApiKey = (request.headers.get('x-api-key') || payload.apikey || "").trim();
+        const expectedApiKey = (process.env.EVOLUTION_API_KEY || "").trim();
+
+        if (incomingApiKey !== expectedApiKey) {
+            console.warn(`[Webhook] API Key mismatch: Local[${expectedApiKey}] vs Remote[${incomingApiKey}]`);
         }
 
         // Processar apenas mensagens recebidas (MESSAGES_UPSERT)
@@ -87,7 +89,9 @@ export async function POST(request: NextRequest) {
             "";
 
         const phone = data.key?.remoteJid;
-        const participant = data.key?.participant || phone;
+        // Priorizar participantAlt (v2) ou limpar o participant lid
+        const rawParticipant = data.key?.participantAlt || data.key?.participant || phone;
+        const participant = rawParticipant.split('@')[0]; // Pega apenas a parte numérica/lid
 
         if (!message || !phone) {
             return NextResponse.json({ status: 'ignored' });

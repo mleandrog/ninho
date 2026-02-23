@@ -21,6 +21,7 @@ export default function AdminWhatsAppDashboard() {
     const [connectionStatus, setConnectionStatus] = useState<any>(null);
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [connecting, setConnecting] = useState(false);
+    const [isStopping, setIsStopping] = useState<number | null>(null);
 
     // Form states - Campanhas
     const [campaignName, setCampaignName] = useState("");
@@ -39,6 +40,31 @@ export default function AdminWhatsAppDashboard() {
     useEffect(() => {
         fetchInitialData();
     }, []);
+
+    const handleStopCampaign = async (id: number) => {
+        if (!confirm('Deseja realmente interromper esta campanha? Os disparos restantes não serão enviados.')) return;
+
+        setIsStopping(id);
+        try {
+            const response = await fetch('/api/whatsapp/campaign/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaignId: id })
+            });
+
+            if (response.ok) {
+                toast.success('Campanha interrompida com sucesso!');
+                fetchInitialData();
+            } else {
+                toast.error('Erro ao interromper campanha.');
+            }
+        } catch (error) {
+            console.error('Error stopping campaign:', error);
+            toast.error('Erro de conexão.');
+        } finally {
+            setIsStopping(null);
+        }
+    };
 
     const fetchInitialData = async () => {
         setLoading(true);
@@ -537,9 +563,25 @@ export default function AdminWhatsAppDashboard() {
                                                             campaign.status === 'completed' ? 'Sucesso' : 'Aguardando'}
                                                     </span>
                                                 </div>
-                                                <span className="text-[10px] font-bold text-gray-400">
-                                                    {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
-                                                </span>
+                                                <div className="flex items-center gap-3">
+                                                    {campaign.status === 'running' && (
+                                                        <Button
+                                                            size="xs"
+                                                            variant="destructive"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleStopCampaign(campaign.id);
+                                                            }}
+                                                            disabled={isStopping === campaign.id}
+                                                            className="h-6 px-3 rounded-full text-[9px] font-black uppercase tracking-tighter"
+                                                        >
+                                                            {isStopping === campaign.id ? 'Parando...' : 'Stop'}
+                                                        </Button>
+                                                    )}
+                                                    <span className="text-[10px] font-bold text-gray-400">
+                                                        {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             <h3 className="text-xl font-black text-muted-text mb-2 group-hover:text-primary transition-colors truncate">
