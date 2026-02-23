@@ -53,10 +53,12 @@ npm install
 npm run build
 
 # 5. Organizar arquivos (Passo vital para o modo Standalone)
+# Garanta que o arquivo .env.local existe na pasta antes de rodar:
+cp .env.local .next/standalone/.env
 cp -r public .next/standalone/
 cp -r .next/static .next/standalone/.next/
 
-# 6. Reiniciar o processo (Apontando para a pasta certa)
+# 6. Reiniciar o processo
 pm2 delete ninho-lar
 pm2 start .next/standalone/server.js --name ninho-lar
 ```
