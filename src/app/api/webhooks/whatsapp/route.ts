@@ -126,7 +126,8 @@ export async function POST(request: NextRequest) {
                                     await queueService.addToQueue(
                                         campaignData.id,
                                         productId,
-                                        leadPhone,
+                                        leadPhone,      // identificação
+                                        participant,    // JID completo (@s.whatsapp.net ou @lid)
                                         contactName,
                                         message
                                     );
