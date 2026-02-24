@@ -18,6 +18,7 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
     const [groups, setGroups] = useState<any[]>([]);
     const [leads, setLeads] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isStopping, setIsStopping] = useState(false);
 
     useEffect(() => {
         if (campaignId) {
@@ -84,6 +85,29 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
         }
     };
 
+    const handleStopCampaign = async (id: number) => {
+        if (!confirm('Tem certeza que deseja interromper esta campanha?')) return;
+
+        try {
+            setIsStopping(true);
+            const response = await fetch('/api/whatsapp/campaign/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaignId: id }),
+            });
+
+            if (!response.ok) throw new Error('Falha ao parar campanha');
+
+            toast.success("Campanha interrompida!");
+            fetchCampaignDetails();
+        } catch (error) {
+            console.error("Erro ao parar campanha:", error);
+            toast.error("Erro ao interromper.");
+        } finally {
+            setIsStopping(false);
+        }
+    };
+
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
     // Timer de tempo decorrido
@@ -141,31 +165,44 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
 
             <main className="flex-1 p-6 md:p-12 overflow-y-auto">
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <button
-                        onClick={() => router.push('/admin/whatsapp')}
-                        className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-500 hover:text-primary transition-colors hover:shadow-md"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-muted-text flex items-center gap-3">
-                            <span className="uppercase tracking-tighter truncate max-w-lg">
-                                {campaign.name || 'Detalhes da Campanha'}
-                            </span>
-                            <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${campaign.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                campaign.status === 'running' ? 'bg-blue-100 text-blue-600 animate-pulse' :
-                                    campaign.status === 'error' ? 'bg-red-100 text-red-600' :
-                                        'bg-yellow-100 text-yellow-600'
-                                }`}>
-                                {campaign.status === 'running' ? 'Em Andamento' :
-                                    campaign.status === 'completed' ? 'Finalizada' :
-                                        campaign.status === 'error' ? 'Erro' : 'Pendente'}
-                            </span>
-                        </h1>
-                        <p className="text-sm font-bold text-gray-400 mt-1">
-                            Lançada em {new Date(campaign.created_at).toLocaleString('pt-BR')}
-                        </p>
+                <div className="flex items-center justify-between gap-4 mb-8">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => router.push('/admin/whatsapp')}
+                            className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-500 hover:text-primary transition-colors hover:shadow-md shrink-0"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                        <div>
+                            <h1 className="text-3xl font-black text-muted-text -tracking-wider">
+                                {campaign.name || 'Estatísticas da Campanha'}
+                            </h1>
+                            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-1">
+                                {campaign.categories?.name} • Criada em {new Date(campaign.created_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {campaign.status === 'running' && (
+                            <Button
+                                variant="destructive"
+                                onClick={() => handleStopCampaign(campaign.id)}
+                                isLoading={isStopping}
+                                className="px-6 h-10 rounded-full font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-lg hover:shadow-red-500/20"
+                            >
+                                Parar Campanha
+                            </Button>
+                        )}
+                        <div className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${campaign.status === 'running' ? 'bg-blue-100 text-blue-600' :
+                            campaign.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
+                            }`}>
+                            <div className={`w-2 h-2 rounded-full ${campaign.status === 'running' ? 'bg-blue-500 animate-pulse' :
+                                campaign.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'
+                                }`} />
+                            {campaign.status === 'running' ? 'Em Andamento' :
+                                campaign.status === 'completed' ? 'Concluída' : 'Aguardando'}
+                        </div>
                     </div>
                 </div>
 
@@ -403,8 +440,8 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }
 
