@@ -114,7 +114,9 @@ export default function AdminWhatsAppDashboard() {
         try {
             const res = await fetch('/api/utils/time');
             const data = await res.json();
-            setServerTime(data.serverTime);
+            // Formata a hora para HH:MM:SS
+            const date = new Date(data.serverTime);
+            setServerTime(date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
         } catch (e) { console.error("Erro ao buscar hora do servidor", e); }
     };
 
@@ -310,22 +312,23 @@ export default function AdminWhatsAppDashboard() {
                     rules_message: settings.rules_message,
                     final_message: settings.final_message,
                     default_interval_seconds: settings.default_interval_seconds,
-                    cart_expiration_minutes: settings.cart_expiration_minutes,
-                    payment_expiration_minutes: settings.payment_expiration_minutes,
-                    asaas_pix_enabled: settings.asaas_pix_enabled,
-                    asaas_card_enabled: settings.asaas_card_enabled,
-                    store_lat: settings.store_lat,
-                    store_lng: settings.store_lng,
-                    store_address: settings.store_address,
-                    store_cep: settings.store_cep,
                 })
                 .eq("id", settings.id);
             if (error) throw error;
             toast.success("Configurações atualizadas!");
             setShowSettings(false);
         } catch {
-            toast.error("Erro ao atualizar configurações.");
+            toast.error("Erro ao atualizar configurações");
         }
+    };
+
+    const insertText = (field: keyof CampaignForm, tag: string) => {
+        const value = form[field] as string;
+        setForm({ ...form, [field]: tag + value + tag });
+    };
+
+    const insertEmoji = (field: keyof CampaignForm, emoji: string) => {
+        setForm({ ...form, [field]: (form[field] as string) + emoji });
     };
 
     // ─── Groups ───────────────────────────────────────────────────────────────
@@ -429,31 +432,32 @@ export default function AdminWhatsAppDashboard() {
             <AdminSidebar />
 
             <main className="flex-1 p-12 overflow-y-auto">
-                {/* Header */}
                 <header className="flex justify-between items-center mb-10">
-                    <div>
-                        <h1 className="text-4xl font-black text-muted-text tracking-tighter lowercase flex items-center gap-3">
-                            <Zap className="text-primary" size={32} />
-                            WhatsApp
-                        </h1>
-                        <div className="flex items-center gap-4 mt-1">
-                            <p className="text-gray-400 font-bold">Gerenciamento de campanhas e grupos</p>
-                            {serverTime && (
-                                <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-soft shadow-sm">
-                                    <Clock size={12} className="text-primary" />
-                                    <span className="text-[10px] font-black text-muted-text uppercase tracking-widest">
-                                        Server: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            )}
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <h1 className="text-4xl font-black text-muted-text tracking-tighter lowercase flex items-center gap-3">
+                                <Zap className="text-primary" size={32} />
+                                WhatsApp
+                            </h1>
+                            <p className="text-gray-400 font-bold mt-1">Gerenciamento de campanhas e grupos</p>
                         </div>
+
+                        {serverTime && (
+                            <div className="bg-white px-5 py-3 rounded-2xl shadow-premium border border-white flex items-center gap-4 group transition-all">
+                                <div className="relative">
+                                    <Clock size={20} className="text-primary animate-pulse" />
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border-2 border-white" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Hora do Servidor</span>
+                                    <span className="text-lg font-mono font-black text-muted-text tabular-nums tracking-wider">{serverTime}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <Button
-                        variant="outline"
-                        className="gap-2 bg-white rounded-2xl h-14"
-                        onClick={() => setShowSettings(!showSettings)}
-                    >
-                        <SettingsIcon size={18} /> Configurações
+                    <Button variant="outline" className="h-14 px-8 rounded-2xl font-black gap-3 shadow-premium bg-white border-white" onClick={() => (window.location.href = '/admin/configuracoes')}>
+                        <SettingsIcon size={20} />
+                        Configurações
                     </Button>
                 </header>
 
@@ -635,7 +639,7 @@ export default function AdminWhatsAppDashboard() {
                     <button onClick={() => setActiveTab("campaigns")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "campaigns" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
                         <Send size={18} /> Campanhas
                     </button>
-                    <button onClick={() => setActiveTab("bags")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "bags" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                    <button onClick={() => (window.location.href = '/admin/pedidos')} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 bg-white text-gray-400 hover:text-muted-text`}>
                         <ShoppingBag size={18} /> Sacolas
                     </button>
                     <button onClick={() => setActiveTab("groups")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "groups" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
@@ -1065,12 +1069,22 @@ export default function AdminWhatsAppDashboard() {
 
                                 {/* Mensagem Inicial */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">1</div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Inicial</label>
+                                    <div className="flex justify-between items-center group/tools">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">1</div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Inicial</label>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                            <button type="button" onClick={() => insertText('initial_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                            <button type="button" onClick={() => insertText('initial_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                                            <button type="button" onClick={() => insertEmoji('initial_message', '🛍️')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛍️</button>
+                                            <button type="button" onClick={() => insertEmoji('initial_message', '✨')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✨</button>
+                                            <button type="button" onClick={() => insertEmoji('initial_message', '🎉')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🎉</button>
+                                        </div>
                                     </div>
                                     <textarea placeholder="Olá! Bem-vindo(a) ao nosso catálogo especial! 🎉"
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
                                         value={form.initial_message}
                                         onChange={e => setForm({ ...form, initial_message: e.target.value })} />
                                     <div className="flex items-center gap-3">
@@ -1088,12 +1102,22 @@ export default function AdminWhatsAppDashboard() {
 
                                 {/* Mensagem de Regras */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">2</div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
+                                    <div className="flex justify-between items-center group/tools">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">2</div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                            <button type="button" onClick={() => insertText('rules_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                            <button type="button" onClick={() => insertText('rules_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                                            <button type="button" onClick={() => insertEmoji('rules_message', '📋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📋</button>
+                                            <button type="button" onClick={() => insertEmoji('rules_message', '📦')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📦</button>
+                                            <button type="button" onClick={() => insertEmoji('rules_message', '✅')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✅</button>
+                                        </div>
                                     </div>
                                     <textarea placeholder="📋 Nossas regras: Para comprar, envie o código do produto..."
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
                                         value={form.rules_message}
                                         onChange={e => setForm({ ...form, rules_message: e.target.value })} />
                                     <div className="flex items-center gap-3">
@@ -1138,12 +1162,22 @@ export default function AdminWhatsAppDashboard() {
 
                                 {/* Mensagem Final */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">4</div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
+                                    <div className="flex justify-between items-center group/tools">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">4</div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                            <button type="button" onClick={() => insertText('final_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                            <button type="button" onClick={() => insertText('final_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                                            <button type="button" onClick={() => insertEmoji('final_message', '🛒')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛒</button>
+                                            <button type="button" onClick={() => insertEmoji('final_message', '👋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">👋</button>
+                                            <button type="button" onClick={() => insertEmoji('final_message', '💙')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">💙</button>
+                                        </div>
                                     </div>
                                     <textarea placeholder="É isso! Esses são todos os produtos disponíveis. Para comprar, responda com o código! 🛒"
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
                                         value={form.final_message}
                                         onChange={e => setForm({ ...form, final_message: e.target.value })} />
                                 </div>

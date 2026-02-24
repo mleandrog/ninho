@@ -6,7 +6,7 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { toast } from "react-hot-toast";
 import {
     Clock, CheckCircle, Truck, AlertCircle, Eye,
-    RefreshCcw, Search, Filter, X
+    RefreshCcw, Search, Filter, X, ShoppingBag, User, Calendar as CalendarIcon
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -18,8 +18,12 @@ const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }>
     canceled: { label: "Cancelado", icon: AlertCircle, color: "text-red-600 bg-red-50" },
 };
 
+type TabType = "pedidos" | "sacolas";
+
 export default function AdminOrdersPage() {
+    const [activeTab, setActiveTab] = useState<TabType>("pedidos");
     const [orders, setOrders] = useState<any[]>([]);
+    const [bags, setBags] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Filtros
@@ -28,7 +32,10 @@ export default function AdminOrdersPage() {
     const [filterFrom, setFilterFrom] = useState("");
     const [filterTo, setFilterTo] = useState("");
 
-    useEffect(() => { fetchOrders(); }, []);
+    useEffect(() => {
+        if (activeTab === "pedidos") fetchOrders();
+        else fetchBags();
+    }, [activeTab]);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -41,6 +48,23 @@ export default function AdminOrdersPage() {
             setOrders(data || []);
         } catch (err: any) {
             toast.error("Erro ao carregar pedidos: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchBags = async () => {
+        setLoading(true);
+        try {
+            // Busca sacolas abertas (carrinhos que não viraram pedido ainda ou estão ativos)
+            const { data, error } = await supabase
+                .from("whatsapp_shopping_sessions")
+                .select("*, profiles:customer_id(full_name)")
+                .order("updated_at", { ascending: false });
+            if (error) throw error;
+            setBags(data || []);
+        } catch (err: any) {
+            toast.error("Erro ao carregar sacolas: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -65,13 +89,16 @@ export default function AdminOrdersPage() {
     };
 
     const filtered = useMemo(() => {
-        return orders.filter(order => {
-            const name = (order.profiles?.full_name || order.customer_name || "").toLowerCase();
-            const num = (order.order_number || order.id.slice(0, 8)).toLowerCase();
-            const created = new Date(order.created_at);
+        const source = activeTab === "pedidos" ? orders : bags;
+        return source.filter(item => {
+            const name = (item.profiles?.full_name || item.customer_name || "").toLowerCase();
+            const num = activeTab === "pedidos"
+                ? (item.order_number || item.id.slice(0, 8)).toLowerCase()
+                : (item.wa_name || "").toLowerCase();
+            const created = new Date(item.created_at);
 
             if (search && !name.includes(search.toLowerCase()) && !num.includes(search.toLowerCase())) return false;
-            if (filterStatus && order.status !== filterStatus) return false;
+            if (activeTab === "pedidos" && filterStatus && item.status !== filterStatus) return false;
             if (filterFrom && created < new Date(filterFrom)) return false;
             if (filterTo) {
                 const to = new Date(filterTo);
@@ -80,7 +107,7 @@ export default function AdminOrdersPage() {
             }
             return true;
         });
-    }, [orders, search, filterStatus, filterFrom, filterTo]);
+    }, [orders, bags, activeTab, search, filterStatus, filterFrom, filterTo]);
 
     const hasFilters = search || filterStatus || filterFrom || filterTo;
 
@@ -90,69 +117,92 @@ export default function AdminOrdersPage() {
 
             <main className="flex-1 p-12 overflow-y-auto">
                 {/* Header */}
-                <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-4xl font-black text-muted-text">Gestão de Pedidos</h1>
-                        <p className="text-gray-400 font-bold mt-1">
-                            {filtered.length} {filtered.length === 1 ? "pedido" : "pedidos"}
-                            {hasFilters ? " encontrados" : " no total"}
-                        </p>
+                <header className="flex justify-between items-center mb-10">
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <h1 className="text-4xl font-black text-muted-text lowercase tracking-tighter">
+                                {activeTab === "pedidos" ? "Vendas" : "Carrinhos"}
+                            </h1>
+                            <p className="text-gray-400 font-bold mt-1">
+                                {activeTab === "pedidos" ? "Gestão de Pedidos" : "Sacolas em Aberto"}
+                            </p>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex bg-white p-1.5 rounded-[2rem] shadow-premium border border-white gap-1 transition-all">
+                            {[
+                                { id: "pedidos", label: "Pedidos", icon: Truck },
+                                { id: "sacolas", label: "Sacolas", icon: ShoppingBag }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id as TabType)}
+                                    className={clsx(
+                                        "px-8 py-3 rounded-[1.5rem] flex items-center gap-3 transition-all font-black text-xs uppercase tracking-widest",
+                                        activeTab === tab.id
+                                            ? "bg-primary text-white shadow-lg"
+                                            : "text-gray-400 hover:text-muted-text hover:bg-soft"
+                                    )}
+                                >
+                                    <tab.icon size={16} />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <button
-                        onClick={fetchOrders}
+                        onClick={activeTab === "pedidos" ? fetchOrders : fetchBags}
                         className="p-4 bg-white rounded-2xl shadow-premium border border-white text-gray-400 hover:text-primary transition-colors"
                     >
-                        <RefreshCcw size={20} />
+                        <RefreshCcw size={20} className={loading ? "animate-spin" : ""} />
                     </button>
                 </header>
 
                 {/* Filtros */}
-                <div className="bg-white p-6 rounded-[2rem] shadow-premium border border-white mb-6">
+                <div className="bg-white p-6 rounded-[2.5rem] shadow-premium border border-white mb-8">
                     <div className="flex flex-wrap gap-4 items-center">
                         {/* Busca */}
                         <div className="flex-1 min-w-[200px] relative">
                             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Buscar por cliente ou nº do pedido..."
+                                placeholder={activeTab === "pedidos" ? "Buscar por cliente ou nº..." : "Buscar por nome no WhatsApp..."}
                                 className="w-full pl-10 pr-4 py-3 bg-soft rounded-2xl border-none font-bold text-sm outline-none"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                             />
                         </div>
 
-                        {/* Status */}
-                        <div className="relative">
-                            <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            <select
-                                className="pl-10 pr-4 py-3 bg-soft rounded-2xl border-none font-black text-sm uppercase tracking-wide outline-none appearance-none cursor-pointer"
-                                value={filterStatus}
-                                onChange={e => setFilterStatus(e.target.value)}
-                            >
-                                <option value="">Todos os status</option>
-                                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                                    <option key={key} value={key}>{cfg.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Status (Só para Pedidos) */}
+                        {activeTab === "pedidos" && (
+                            <div className="relative">
+                                <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                <select
+                                    className="pl-10 pr-4 py-3 bg-soft rounded-2xl border-none font-black text-sm uppercase tracking-wide outline-none appearance-none cursor-pointer min-w-[180px]"
+                                    value={filterStatus}
+                                    onChange={e => setFilterStatus(e.target.value)}
+                                >
+                                    <option value="">Status</option>
+                                    {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                                        <option key={key} value={key}>{cfg.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
-                        {/* De */}
-                        <div className="flex items-center gap-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">De</label>
+                        {/* Data */}
+                        <div className="flex items-center gap-2 bg-soft px-4 py-1.5 rounded-2xl">
+                            <CalendarIcon size={14} className="text-gray-400" />
                             <input
                                 type="date"
-                                className="px-4 py-3 bg-soft rounded-2xl border-none font-bold text-sm outline-none"
+                                className="bg-transparent border-none font-bold text-xs outline-none"
                                 value={filterFrom}
                                 onChange={e => setFilterFrom(e.target.value)}
                             />
-                        </div>
-
-                        {/* Até */}
-                        <div className="flex items-center gap-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Até</label>
+                            <div className="w-2 h-px bg-gray-300 mx-1" />
                             <input
                                 type="date"
-                                className="px-4 py-3 bg-soft rounded-2xl border-none font-bold text-sm outline-none"
+                                className="bg-transparent border-none font-bold text-xs outline-none"
                                 value={filterTo}
                                 onChange={e => setFilterTo(e.target.value)}
                             />
@@ -162,92 +212,121 @@ export default function AdminOrdersPage() {
                         {hasFilters && (
                             <button
                                 onClick={clearFilters}
-                                className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-red-50 text-red-400 hover:bg-red-100 font-black text-xs uppercase tracking-wide transition-all"
+                                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-red-50 text-red-400 hover:bg-red-100 transition-all"
+                                title="Limpar Filtros"
                             >
-                                <X size={14} /> Limpar
+                                <X size={20} />
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* Lista de Pedidos */}
-                <div className="space-y-2">
+                {/* Conteúdo */}
+                <div className="space-y-4">
                     {loading ? (
-                        <div className="bg-white p-20 rounded-[2.5rem] flex justify-center items-center shadow-premium">
-                            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="bg-white p-20 rounded-[3rem] flex flex-col justify-center items-center shadow-premium gap-4">
+                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Carregando dados...</span>
                         </div>
                     ) : filtered.length === 0 ? (
-                        <div className="bg-white p-16 rounded-[2.5rem] text-center font-bold text-gray-400 shadow-premium">
-                            {hasFilters ? "Nenhum pedido encontrado com esses filtros." : "Nenhum pedido realizado ainda."}
+                        <div className="bg-white p-20 rounded-[3rem] flex flex-col items-center justify-center text-center shadow-premium border border-white">
+                            <div className="w-20 h-20 bg-soft rounded-[2rem] flex items-center justify-center mb-6">
+                                {activeTab === "pedidos" ? <Truck size={40} className="text-gray-300" /> : <ShoppingBag size={40} className="text-gray-300" />}
+                            </div>
+                            <h3 className="text-xl font-black text-muted-text mb-2">
+                                {hasFilters ? "Nenhum resultado" : (activeTab === "pedidos" ? "Sem pedidos ainda" : "Nenhuma sacola aberta")}
+                            </h3>
+                            <p className="text-gray-400 font-bold text-sm max-w-xs">
+                                {hasFilters ? "Tente ajustar seus filtros para encontrar o que procura." : (activeTab === "pedidos" ? "As vendas realizadas aparecerão aqui." : "Quando clientes iniciarem carrinhos, eles aparecerão aqui.")}
+                            </p>
                         </div>
                     ) : (
-                        <>
-                            {/* Header da tabela */}
-                            <div className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-2">
+                        <div className="space-y-3">
+                            {/* Grid Header */}
+                            <div className="grid grid-cols-[3rem_1.5fr_1.5fr_1fr_1fr_auto] gap-6 px-8 py-2">
                                 <div />
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pedido</span>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeTab === "pedidos" ? "Pedido" : "WhatsApp"}</span>
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente</span>
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Data</span>
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</span>
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</span>
                                 <div />
                             </div>
 
-                            {filtered.map(order => {
-                                const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
-                                const Icon = status.icon;
+                            {filtered.map(item => {
+                                const status = activeTab === "pedidos" ? (STATUS_CONFIG[item.status] || STATUS_CONFIG.pending) : null;
+                                const Icon = status?.icon || ShoppingBag;
+
                                 return (
                                     <div
-                                        key={order.id}
-                                        className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center bg-white px-6 py-4 rounded-2xl shadow-premium border border-white hover:border-primary/20 transition-all group"
+                                        key={item.id}
+                                        className="grid grid-cols-[3rem_1.5fr_1.5fr_1fr_1fr_auto] gap-6 items-center bg-white px-8 py-5 rounded-[2rem] shadow-premium border border-white hover:border-primary/20 transition-all group"
                                     >
-                                        {/* Ícone status */}
-                                        <div className={clsx("w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0", status.color)}>
-                                            <Icon size={16} />
+                                        <div className={clsx(
+                                            "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
+                                            status ? status.color : "bg-soft text-gray-400"
+                                        )}>
+                                            <Icon size={18} />
                                         </div>
 
-                                        {/* Número do pedido */}
-                                        <span className="font-black text-muted-text text-sm truncate">
-                                            #{order.order_number || order.id.slice(0, 8).toUpperCase()}
-                                        </span>
-
-                                        {/* Cliente */}
-                                        <span className="font-bold text-sm text-gray-500 truncate">
-                                            {order.profiles?.full_name || order.customer_name || "N/A"}
-                                        </span>
-
-                                        {/* Data */}
-                                        <span className="text-xs font-bold text-gray-400">
-                                            {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                                            <span className="block text-[10px] text-gray-300">
-                                                {new Date(order.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                        <div className="flex flex-col">
+                                            <span className="font-black text-muted-text">
+                                                {activeTab === "pedidos"
+                                                    ? `#${item.order_number || item.id.slice(0, 8).toUpperCase()}`
+                                                    : (item.wa_name || "Sem nome no WA")}
                                             </span>
+                                            {activeTab === "sacolas" && (
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                    {item.wa_id?.split('@')[0] || "Sem número"}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-soft flex items-center justify-center text-gray-400">
+                                                <User size={14} />
+                                            </div>
+                                            <span className="font-bold text-sm text-gray-500 truncate">
+                                                {item.profiles?.full_name || item.customer_name || "Desconhecido"}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-muted-text">
+                                                {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-gray-300">
+                                                {new Date(item.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                            </span>
+                                        </div>
+
+                                        <span className="font-black text-primary text-lg">
+                                            R$ {Number(item.total_amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                         </span>
 
-                                        {/* Total */}
-                                        <span className="font-black text-primary">
-                                            R$ {Number(order.total_amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                                        </span>
-
-                                        {/* Select de status */}
-                                        <select
-                                            value={order.status}
-                                            onChange={e => updateStatus(order.id, e.target.value)}
-                                            className="px-3 py-2 bg-soft rounded-xl border-none text-xs font-black uppercase text-gray-500 focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer"
-                                        >
-                                            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                                                <option key={key} value={key}>{cfg.label}</option>
-                                            ))}
-                                        </select>
-
-                                        {/* Ações */}
-                                        <button className="w-9 h-9 rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all">
-                                            <Eye size={17} />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {activeTab === "pedidos" ? (
+                                                <select
+                                                    value={item.status}
+                                                    onChange={e => updateStatus(item.id, e.target.value)}
+                                                    className="px-4 py-2 bg-soft rounded-xl border-none text-[10px] font-black uppercase text-gray-500 focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer tracking-widest"
+                                                >
+                                                    {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                                                        <option key={key} value={key}>{cfg.label}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <div className="px-4 py-2 bg-primary/5 rounded-xl text-[10px] font-black uppercase text-primary tracking-widest">
+                                                    Ativa
+                                                </div>
+                                            )}
+                                            <button className="w-10 h-10 rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all">
+                                                <Eye size={18} />
+                                            </button>
+                                        </div>
                                     </div>
                                 );
                             })}
-                        </>
+                        </div>
                     )}
                 </div>
             </main>
