@@ -317,6 +317,7 @@ export default function AdminWhatsAppDashboard() {
                     store_lat: settings.store_lat,
                     store_lng: settings.store_lng,
                     store_address: settings.store_address,
+                    store_cep: settings.store_cep,
                 })
                 .eq("id", settings.id);
             if (error) throw error;
@@ -502,12 +503,21 @@ export default function AdminWhatsAppDashboard() {
                                             <MapPin size={14} /> Logística da Loja
                                         </h3>
                                         <div className="grid md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Endereço de Origem</label>
-                                                <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                    value={settings.store_address || ""}
-                                                    onChange={e => setSettings({ ...settings, store_address: e.target.value })}
-                                                    placeholder="Rua Exemplo, 123, Cidade - UF" />
+                                            <div className="grid md:grid-cols-3 gap-4">
+                                                <div className="md:col-span-2 space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Endereço de Origem</label>
+                                                    <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                        value={settings.store_address || ""}
+                                                        onChange={e => setSettings({ ...settings, store_address: e.target.value })}
+                                                        placeholder="Rua Exemplo, 123, Cidade - UF" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CEP</label>
+                                                    <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                        value={settings.store_cep || ""}
+                                                        onChange={e => setSettings({ ...settings, store_cep: e.target.value })}
+                                                        placeholder="00000-000" />
+                                                </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
