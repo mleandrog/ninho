@@ -155,7 +155,15 @@ export default function AdminWhatsAppDashboard() {
         // Removemos o setLoading(true) do polling para não ficar piscando
         try {
             const [catRes, grpRes, setRes, campRes] = await Promise.all([
-                supabase.from("categories").select("*"),
+                supabase.from("categories").select(`
+                    id, 
+                    name, 
+                    slug, 
+                    image_url, 
+                    is_active, 
+                    created_at,
+                    products:products(count)
+                `).eq('products.status', 'available'),
                 supabase.from("whatsapp_groups").select("*").order("created_at", { ascending: false }),
                 supabase.from("whatsapp_settings").select("*").limit(1).single(),
                 supabase
@@ -1152,9 +1160,14 @@ export default function AdminWhatsAppDashboard() {
                                         value={form.category_id}
                                         onChange={e => setForm({ ...form, category_id: e.target.value })}>
                                         <option value="">Selecione uma categoria</option>
-                                        {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                        ))}
+                                        {categories.map(cat => {
+                                            const count = cat.products?.[0]?.count || 0;
+                                            return (
+                                                <option key={cat.id} value={cat.id}>
+                                                    {cat.name} {count > 0 ? `(${count} disponíveis)` : '(Sem estoque)'}
+                                                </option>
+                                            )
+                                        })}
                                     </select>
                                     <div className="flex items-center gap-3">
                                         <Clock size={14} className="text-gray-400 flex-shrink-0" />
