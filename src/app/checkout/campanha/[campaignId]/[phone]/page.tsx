@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingBag, Truck, X, CheckCircle2, Package, Loader2 } from "lucide-react";
+import { ShoppingBag, Truck, X, CheckCircle2, Package, Loader2, Eye } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function CampaignCartPage({
