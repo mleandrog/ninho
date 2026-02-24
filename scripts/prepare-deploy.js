@@ -80,11 +80,11 @@ if (fs.existsSync(staticDir)) {
     console.log('✅ Static assets copiados para .next/static');
 }
 
-// 7. Copiar .env.local
+// 7. Copiar .env.local como .env (Modo standalone ignora .env.local)
 const envFile = path.join(rootDir, '.env.local');
 if (fs.existsSync(envFile)) {
-    fs.copyFileSync(envFile, path.join(tempZipDir, '.env.local'));
-    console.log('✅ .env.local incluído.');
+    fs.copyFileSync(envFile, path.join(tempZipDir, '.env'));
+    console.log('✅ .env.local incluído como .env (necessário para modo standalone).');
 }
 
 // 8. Criar o ZIP usando PowerShell

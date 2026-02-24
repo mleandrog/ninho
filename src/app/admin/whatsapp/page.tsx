@@ -61,7 +61,9 @@ export default function AdminWhatsAppDashboard() {
     const [serverTime, setServerTime] = useState<string | null>(null);
     const [settingsTab, setSettingsTab] = useState<"general" | "payments">("general");
     const [loading, setLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [webhookUrl, setWebhookUrl] = useState("");
 
     // Filtros
     const [search, setSearch] = useState("");
@@ -96,9 +98,15 @@ export default function AdminWhatsAppDashboard() {
     const [showGroupSelector, setShowGroupSelector] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         fetchInitialData();
         fetchServerTime();
         const timeInterval = setInterval(fetchServerTime, 60000); // Atualiza hora a cada minuto
+
+        if (typeof window !== "undefined") {
+            setWebhookUrl(`${window.location.protocol}//${window.location.host}/api/whatsapp/webhook`);
+        }
+
         return () => clearInterval(timeInterval);
     }, []);
 
@@ -112,22 +120,22 @@ export default function AdminWhatsAppDashboard() {
 
     useEffect(() => {
         let intervalId: any;
-        if (activeTab === "connection") {
+        if (activeTab === "connection" && mounted) {
             checkConnection();
-            intervalId = window.setInterval(async () => {
+            intervalId = setInterval(async () => {
                 try {
                     const data = await evolutionService.getConnectionStatus();
                     if (data?.instance?.state === "open") {
                         setConnectionStatus(data);
                         setQrCode(null);
-                        window.clearInterval(intervalId);
+                        clearInterval(intervalId);
                         toast.success("WhatsApp conectado com sucesso!");
                     }
                 } catch { /* silent */ }
             }, 5000);
         }
-        return () => { if (intervalId) window.clearInterval(intervalId); };
-    }, [activeTab]);
+        return () => { if (intervalId) clearInterval(intervalId); };
+    }, [activeTab, mounted]);
 
     // ─── Data fetching ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -408,6 +416,12 @@ export default function AdminWhatsAppDashboard() {
         finally { setLoading(false); }
     };
 
+    if (!mounted) {
+        return <div className="min-h-screen bg-soft flex items-center justify-center">
+            <Loader2 className="animate-spin text-primary" size={32} />
+        </div>;
+    }
+
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-soft flex">
@@ -463,143 +477,140 @@ export default function AdminWhatsAppDashboard() {
                             </div>
                         </div>
 
-                        {/* Script para alternar abas sem re-renderizar todo o dashboard (hack amigável para este arquivo grande) */}
-                        <style>{`
-                            .settings-content-payments { display: none; }
-                            [data-tab="payments"] .settings-content-general { display: none; }
-                            [data-tab="payments"] .settings-content-payments { display: block; }
-                        `}</style>
-
-                        <div id="settings-container" data-tab={settingsTab}>
+                        <div id="settings-container">
                             {/* ABA GERAL */}
-                            <div className="settings-content-general space-y-6">
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Palavra-chave</label>
-                                        <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                            value={settings.keyword}
-                                            onChange={e => setSettings({ ...settings, keyword: e.target.value.toUpperCase() })} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-l-2 border-primary pl-2">Intervalo Padrão (segundos)</label>
-                                        <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                            value={settings.default_interval_seconds}
-                                            onChange={e => setSettings({ ...settings, default_interval_seconds: parseInt(e.target.value) })} />
-                                    </div>
-                                </div>
-
-                                {/* LOGÍSTICA */}
-                                <div className="p-6 bg-soft/50 rounded-[2rem] border border-white space-y-4">
-                                    <h3 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                        <MapPin size={14} /> Logística da Loja
-                                    </h3>
-                                    <div className="grid md:grid-cols-2 gap-4">
+                            {settingsTab === 'general' && (
+                                <div className="settings-content-general space-y-6">
+                                    <div className="grid md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Endereço de Origem</label>
-                                            <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                value={settings.store_address || ""}
-                                                onChange={e => setSettings({ ...settings, store_address: e.target.value })}
-                                                placeholder="Rua Exemplo, 123, Cidade - UF" />
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Palavra-chave</label>
+                                            <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                value={settings.keyword}
+                                                onChange={e => setSettings({ ...settings, keyword: e.target.value.toUpperCase() })} />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Latitude</label>
-                                                <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                    value={settings.store_lat || ""}
-                                                    onChange={e => setSettings({ ...settings, store_lat: parseFloat(e.target.value) })} />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Longitude</label>
-                                                <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                    value={settings.store_lng || ""}
-                                                    onChange={e => setSettings({ ...settings, store_lng: parseFloat(e.target.value) })} />
-                                            </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-l-2 border-primary pl-2">Intervalo Padrão (segundos)</label>
+                                            <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                value={settings.default_interval_seconds}
+                                                onChange={e => setSettings({ ...settings, default_interval_seconds: parseInt(e.target.value) })} />
                                         </div>
                                     </div>
-                                    <p className="text-[9px] text-gray-400 font-bold italic">
-                                        * Essas coordenadas são usadas como ponto de partida para calcular a distância e o preço do frete.
-                                    </p>
+
+                                    {/* LOGÍSTICA */}
+                                    <div className="p-6 bg-soft/50 rounded-[2rem] border border-white space-y-4">
+                                        <h3 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                            <MapPin size={14} /> Logística da Loja
+                                        </h3>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Endereço de Origem</label>
+                                                <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                    value={settings.store_address || ""}
+                                                    onChange={e => setSettings({ ...settings, store_address: e.target.value })}
+                                                    placeholder="Rua Exemplo, 123, Cidade - UF" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Latitude</label>
+                                                    <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                        value={settings.store_lat || ""}
+                                                        onChange={e => setSettings({ ...settings, store_lat: parseFloat(e.target.value) })} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Longitude</label>
+                                                    <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                        value={settings.store_lng || ""}
+                                                        onChange={e => setSettings({ ...settings, store_lng: parseFloat(e.target.value) })} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p className="text-[9px] text-gray-400 font-bold italic">
+                                            * Essas coordenadas são usadas como ponto de partida para calcular a distância e o preço do frete.
+                                        </p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras padrão</label>
+                                        <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={settings.rules_message}
+                                            onChange={e => setSettings({ ...settings, rules_message: e.target.value })} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
+                                        <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={settings.final_message}
+                                            onChange={e => setSettings({ ...settings, final_message: e.target.value })}
+                                            placeholder={"Use {categoryName} para incluir o nome da categoria."} />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras padrão</label>
-                                    <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
-                                        value={settings.rules_message}
-                                        onChange={e => setSettings({ ...settings, rules_message: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
-                                    <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
-                                        value={settings.final_message}
-                                        onChange={e => setSettings({ ...settings, final_message: e.target.value })}
-                                        placeholder="Use {categoryName} para incluir o nome da categoria." />
-                                </div>
-                            </div>
+                            )}
 
                             {/* ABA PAGAMENTOS */}
-                            <div className="settings-content-payments space-y-8">
-                                <div className="grid md:grid-cols-2 gap-8">
-                                    {/* Prazos */}
-                                    <div className="space-y-6">
-                                        <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-primary pl-3">Prazos de Expiração</h3>
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
-                                                    Link do Carrinho <span>(Minutos)</span>
-                                                </label>
-                                                <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                                    value={settings.cart_expiration_minutes || 60}
-                                                    onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
-                                                <p className="text-[9px] text-gray-400 font-medium">Tempo que o cliente tem para revisar o carrinho e confirmar.</p>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
-                                                    Link de Pagamento <span>(Minutos)</span>
-                                                </label>
-                                                <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                                    value={settings.payment_expiration_minutes || 60}
-                                                    onChange={e => setSettings({ ...settings, payment_expiration_minutes: parseInt(e.target.value) })} />
-                                                <p className="text-[9px] text-gray-400 font-medium">Validade do QR Code PIX ou Link de Cartão gerado no Asaas.</p>
+                            {settingsTab === 'payments' && (
+                                <div className="settings-content-payments space-y-8">
+                                    <div className="grid md:grid-cols-2 gap-8">
+                                        {/* Prazos */}
+                                        <div className="space-y-6">
+                                            <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-primary pl-3">Prazos de Expiração</h3>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
+                                                        Link do Carrinho <span>(Minutos)</span>
+                                                    </label>
+                                                    <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                        value={settings.cart_expiration_minutes || 60}
+                                                        onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
+                                                    <p className="text-[9px] text-gray-400 font-medium">Tempo que o cliente tem para revisar o carrinho e confirmar.</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
+                                                        Link de Pagamento <span>(Minutos)</span>
+                                                    </label>
+                                                    <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                        value={settings.payment_expiration_minutes || 60}
+                                                        onChange={e => setSettings({ ...settings, payment_expiration_minutes: parseInt(e.target.value) })} />
+                                                    <p className="text-[9px] text-gray-400 font-medium">Validade do QR Code PIX ou Link de Cartão gerado no Asaas.</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Métodos de Pagamento */}
-                                    <div className="space-y-6">
-                                        <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-green-400 pl-3">Métodos Habilitados</h3>
-                                        <div className="space-y-3">
-                                            <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-green-500 shadow-sm">
-                                                        <Zap size={20} />
+                                        {/* Métodos de Pagamento */}
+                                        <div className="space-y-6">
+                                            <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-green-400 pl-3">Métodos Habilitados</h3>
+                                            <div className="space-y-3">
+                                                <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-green-500 shadow-sm">
+                                                            <Zap size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-muted-text text-sm">PIX (Asaas)</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">Liberação Imediata</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-black text-muted-text text-sm">PIX (Asaas)</p>
-                                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Liberação Imediata</p>
-                                                    </div>
-                                                </div>
-                                                <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
-                                                    checked={settings.asaas_pix_enabled !== false}
-                                                    onChange={e => setSettings({ ...settings, asaas_pix_enabled: e.target.checked })} />
-                                            </label>
+                                                    <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
+                                                        checked={settings.asaas_pix_enabled !== false}
+                                                        onChange={e => setSettings({ ...settings, asaas_pix_enabled: e.target.checked })} />
+                                                </label>
 
-                                            <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
-                                                        <Smartphone size={20} />
+                                                <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
+                                                            <Smartphone size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-muted-text text-sm">Cartão / Boleto / Outros</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">Checkout Externo Asaas</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-black text-muted-text text-sm">Cartão / Boleto / Outros</p>
-                                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Checkout Externo Asaas</p>
-                                                    </div>
-                                                </div>
-                                                <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
-                                                    checked={settings.asaas_card_enabled !== false}
-                                                    onChange={e => setSettings({ ...settings, asaas_card_enabled: e.target.checked })} />
-                                            </label>
+                                                    <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
+                                                        checked={settings.asaas_card_enabled !== false}
+                                                        onChange={e => setSettings({ ...settings, asaas_card_enabled: e.target.checked })} />
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         <div className="flex gap-4 pt-4 border-t border-soft">
@@ -943,7 +954,7 @@ export default function AdminWhatsAppDashboard() {
                                             <div className="flex gap-2">
                                                 <input type="text" id="webhook-url" className="flex-1 p-3 bg-white rounded-xl border-none font-bold text-xs"
                                                     placeholder="https://seu-site.com/api/whatsapp/webhook"
-                                                    defaultValue={typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}/api/whatsapp/webhook` : ""} />
+                                                    value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
                                                 <Button size="sm" className="rounded-xl px-4 font-black text-[10px]"
                                                     onClick={async (e) => {
                                                         const target = e.currentTarget.parentElement;
@@ -991,188 +1002,188 @@ export default function AdminWhatsAppDashboard() {
                         )}
                     </div>
                 )}
-            </main>
 
-            {/* ── MODAL CRIAR CAMPANHA ── */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
-                    <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
-                        {/* Modal Header */}
-                        <div className="flex justify-between items-center p-10 pb-6 sticky top-0 bg-white rounded-t-[3rem] z-10 border-b border-soft">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
-                                    <Zap size={20} className="text-primary" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-muted-text">Nova Campanha</h2>
-                                    <p className="text-xs font-bold text-gray-400">Configure e agende o disparo</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setShowModal(false)}
-                                className="w-10 h-10 rounded-2xl bg-soft flex items-center justify-center text-gray-400 hover:text-muted-text hover:bg-gray-100 transition-all">
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        <div className="p-10 space-y-8">
-                            {/* Nome */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome da Campanha</label>
-                                <input type="text" placeholder="Ex: Liquidação Inverno 2026"
-                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
-                                    value={form.name}
-                                    onChange={e => setForm({ ...form, name: e.target.value })} />
-                            </div>
-
-                            {/* Data e hora */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-between gap-1.5">
-                                    <div className="flex items-center gap-1.5"><Calendar size={12} /> Data e Hora do Disparo</div>
-                                    {serverTime && (
-                                        <span className="text-primary normal-case">
-                                            Horário do servidor: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    )}
-                                </label>
-                                <input type="datetime-local"
-                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
-                                    value={form.scheduled_at}
-                                    onChange={e => setForm({ ...form, scheduled_at: e.target.value })} />
-                            </div>
-
-                            <hr className="border-soft" />
-
-                            {/* Mensagem Inicial */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">1</div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Inicial</label>
-                                </div>
-                                <textarea placeholder="Olá! Bem-vindo(a) ao nosso catálogo especial! 🎉"
-                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
-                                    value={form.initial_message}
-                                    onChange={e => setForm({ ...form, initial_message: e.target.value })} />
+                {/* ── MODAL CRIAR CAMPANHA ── */}
+                {showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
+                        <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+                            {/* Modal Header */}
+                            <div className="flex justify-between items-center p-10 pb-6 sticky top-0 bg-white rounded-t-[3rem] z-10 border-b border-soft">
                                 <div className="flex items-center gap-3">
-                                    <Clock size={14} className="text-gray-400 flex-shrink-0" />
-                                    <label className="text-xs font-black text-gray-400">Aguardar</label>
-                                    <input type="number" min={5} max={300}
-                                        className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
-                                        value={form.initial_message_interval}
-                                        onChange={e => setForm({ ...form, initial_message_interval: parseInt(e.target.value) })} />
-                                    <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
-                                </div>
-                            </div>
-
-                            <hr className="border-soft" />
-
-                            {/* Mensagem de Regras */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">2</div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
-                                </div>
-                                <textarea placeholder="📋 Nossas regras: Para comprar, envie o código do produto..."
-                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
-                                    value={form.rules_message}
-                                    onChange={e => setForm({ ...form, rules_message: e.target.value })} />
-                                <div className="flex items-center gap-3">
-                                    <Clock size={14} className="text-gray-400 flex-shrink-0" />
-                                    <label className="text-xs font-black text-gray-400">Aguardar</label>
-                                    <input type="number" min={5} max={300}
-                                        className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
-                                        value={form.rules_interval}
-                                        onChange={e => setForm({ ...form, rules_interval: parseInt(e.target.value) })} />
-                                    <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
-                                </div>
-                            </div>
-
-                            <hr className="border-soft" />
-
-                            {/* Categoria */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">3</div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Categoria de Produtos</label>
-                                </div>
-                                <select className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
-                                    value={form.category_id}
-                                    onChange={e => setForm({ ...form, category_id: e.target.value })}>
-                                    <option value="">Selecione uma categoria</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                </select>
-                                <div className="flex items-center gap-3">
-                                    <Clock size={14} className="text-gray-400 flex-shrink-0" />
-                                    <label className="text-xs font-black text-gray-400">Intervalo entre produtos</label>
-                                    <input type="number" min={10} max={300}
-                                        className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
-                                        value={form.category_interval}
-                                        onChange={e => setForm({ ...form, category_interval: parseInt(e.target.value) })} />
-                                    <label className="text-xs font-black text-gray-400">segundos</label>
-                                </div>
-                            </div>
-
-                            <hr className="border-soft" />
-
-                            {/* Mensagem Final */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">4</div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
-                                </div>
-                                <textarea placeholder="É isso! Esses são todos os produtos disponíveis. Para comprar, responda com o código! 🛒"
-                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
-                                    value={form.final_message}
-                                    onChange={e => setForm({ ...form, final_message: e.target.value })} />
-                            </div>
-
-                            <hr className="border-soft" />
-
-                            {/* Grupos */}
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grupos de Destino</label>
-                                {groups.filter(g => g.active).length === 0 ? (
-                                    <div className="p-6 bg-soft rounded-2xl text-center text-sm font-bold text-gray-400">
-                                        Nenhum grupo ativo. Cadastre grupos na aba "Grupos".
+                                    <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
+                                        <Zap size={20} className="text-primary" />
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {groups.filter(g => g.active).map(group => (
-                                            <button key={group.id} type="button"
-                                                onClick={() => toggleGroupInForm(group.id)}
-                                                className={`p-4 rounded-2xl border-2 transition-all text-left ${form.group_ids.includes(group.id)
-                                                    ? "border-primary bg-primary/5"
-                                                    : "border-soft hover:border-primary/20 bg-soft"}`}>
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${form.group_ids.includes(group.id) ? "border-primary bg-primary" : "border-gray-300"}`}>
-                                                        {form.group_ids.includes(group.id) && <CheckCircle2 size={10} className="text-white" />}
-                                                    </div>
-                                                    <span className="font-black text-sm text-muted-text">{group.name}</span>
-                                                </div>
-                                            </button>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-muted-text">Nova Campanha</h2>
+                                        <p className="text-xs font-bold text-gray-400">Configure e agende o disparo</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowModal(false)}
+                                    className="w-10 h-10 rounded-2xl bg-soft flex items-center justify-center text-gray-400 hover:text-muted-text hover:bg-gray-100 transition-all">
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            <div className="p-10 space-y-8">
+                                {/* Nome */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome da Campanha</label>
+                                    <input type="text" placeholder="Ex: Liquidação Inverno 2026"
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
+                                        value={form.name}
+                                        onChange={e => setForm({ ...form, name: e.target.value })} />
+                                </div>
+
+                                {/* Data e hora */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-between gap-1.5">
+                                        <div className="flex items-center gap-1.5"><Calendar size={12} /> Data e Hora do Disparo</div>
+                                        {serverTime && (
+                                            <span className="text-primary normal-case">
+                                                Horário do servidor: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        )}
+                                    </label>
+                                    <input type="datetime-local"
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
+                                        value={form.scheduled_at}
+                                        onChange={e => setForm({ ...form, scheduled_at: e.target.value })} />
+                                </div>
+
+                                <hr className="border-soft" />
+
+                                {/* Mensagem Inicial */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">1</div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Inicial</label>
+                                    </div>
+                                    <textarea placeholder="Olá! Bem-vindo(a) ao nosso catálogo especial! 🎉"
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
+                                        value={form.initial_message}
+                                        onChange={e => setForm({ ...form, initial_message: e.target.value })} />
+                                    <div className="flex items-center gap-3">
+                                        <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                                        <label className="text-xs font-black text-gray-400">Aguardar</label>
+                                        <input type="number" min={5} max={300}
+                                            className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
+                                            value={form.initial_message_interval}
+                                            onChange={e => setForm({ ...form, initial_message_interval: parseInt(e.target.value) })} />
+                                        <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
+                                    </div>
+                                </div>
+
+                                <hr className="border-soft" />
+
+                                {/* Mensagem de Regras */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">2</div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
+                                    </div>
+                                    <textarea placeholder="📋 Nossas regras: Para comprar, envie o código do produto..."
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
+                                        value={form.rules_message}
+                                        onChange={e => setForm({ ...form, rules_message: e.target.value })} />
+                                    <div className="flex items-center gap-3">
+                                        <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                                        <label className="text-xs font-black text-gray-400">Aguardar</label>
+                                        <input type="number" min={5} max={300}
+                                            className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
+                                            value={form.rules_interval}
+                                            onChange={e => setForm({ ...form, rules_interval: parseInt(e.target.value) })} />
+                                        <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
+                                    </div>
+                                </div>
+
+                                <hr className="border-soft" />
+
+                                {/* Categoria */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">3</div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Categoria de Produtos</label>
+                                    </div>
+                                    <select className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
+                                        value={form.category_id}
+                                        onChange={e => setForm({ ...form, category_id: e.target.value })}>
+                                        <option value="">Selecione uma categoria</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
+                                    </select>
+                                    <div className="flex items-center gap-3">
+                                        <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                                        <label className="text-xs font-black text-gray-400">Intervalo entre produtos</label>
+                                        <input type="number" min={10} max={300}
+                                            className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
+                                            value={form.category_interval}
+                                            onChange={e => setForm({ ...form, category_interval: parseInt(e.target.value) })} />
+                                        <label className="text-xs font-black text-gray-400">segundos</label>
                                     </div>
-                                )}
-                            </div>
+                                </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-4 pt-2">
-                                <Button variant="outline" className="flex-1 h-14 rounded-full font-black"
-                                    onClick={() => setShowModal(false)} disabled={saving}>
-                                    Cancelar
-                                </Button>
-                                <Button className="flex-1 h-14 rounded-full shadow-vibrant font-black gap-2"
-                                    onClick={handleCreateCampaign} disabled={saving}>
-                                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
-                                    {saving ? "Agendando..." : "Agendar Campanha"}
-                                </Button>
+                                <hr className="border-soft" />
+
+                                {/* Mensagem Final */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">4</div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
+                                    </div>
+                                    <textarea placeholder="É isso! Esses são todos os produtos disponíveis. Para comprar, responda com o código! 🛒"
+                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold h-24 outline-none resize-none transition-all"
+                                        value={form.final_message}
+                                        onChange={e => setForm({ ...form, final_message: e.target.value })} />
+                                </div>
+
+                                <hr className="border-soft" />
+
+                                {/* Grupos */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grupos de Destino</label>
+                                    {groups.filter(g => g.active).length === 0 ? (
+                                        <div className="p-6 bg-soft rounded-2xl text-center text-sm font-bold text-gray-400">
+                                            Nenhum grupo ativo. Cadastre grupos na aba "Grupos".
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {groups.filter(g => g.active).map(group => (
+                                                <button key={group.id} type="button"
+                                                    onClick={() => toggleGroupInForm(group.id)}
+                                                    className={`p-4 rounded-2xl border-2 transition-all text-left ${form.group_ids.includes(group.id)
+                                                        ? "border-primary bg-primary/5"
+                                                        : "border-soft hover:border-primary/20 bg-soft"}`}>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${form.group_ids.includes(group.id) ? "border-primary bg-primary" : "border-gray-300"}`}>
+                                                            {form.group_ids.includes(group.id) && <CheckCircle2 size={10} className="text-white" />}
+                                                        </div>
+                                                        <span className="font-black text-sm text-muted-text">{group.name}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex gap-4 pt-2">
+                                    <Button variant="outline" className="flex-1 h-14 rounded-full font-black"
+                                        onClick={() => setShowModal(false)} disabled={saving}>
+                                        Cancelar
+                                    </Button>
+                                    <Button className="flex-1 h-14 rounded-full shadow-vibrant font-black gap-2"
+                                        onClick={handleCreateCampaign} disabled={saving}>
+                                        {saving ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
+                                        {saving ? "Agendando..." : "Agendar Campanha"}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </main>
         </div>
     );
 }
