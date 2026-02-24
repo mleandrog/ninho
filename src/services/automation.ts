@@ -7,9 +7,8 @@ export const automationService = {
      * e delega para o queueService para avançar a fila.
      */
     async processQueueExpirations() {
-        // Delegar para o queueService que tem a lógica completa com link de checkout
-        const { queueService } = await import("@/services/queue");
-        await queueService.handleQueueExpirations();
+        // Fluxo antigo de fila removido. Agora o carrinho é consolidado ao final da campanha.
+        console.log('[Automation] processQueueExpirations ignorado (fluxo consolidado ativo).');
     },
 
     /**
