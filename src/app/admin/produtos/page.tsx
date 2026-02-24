@@ -17,6 +17,8 @@ export default function AdminProductsPage() {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const SIZES = ['RN', 'P', 'M', 'G', 'GG', 'Outros'];
+
     const [formData, setFormData] = useState({
         name: "",
         description: "",
@@ -25,7 +27,9 @@ export default function AdminProductsPage() {
         image_url: "",
         is_featured: false,
         whatsapp_exclusive: false,
+        size: "",
     });
+    const [customSize, setCustomSize] = useState("");
 
     const [imagePreview, setImagePreview] = useState<string>("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -144,6 +148,7 @@ export default function AdminProductsPage() {
                 image_url: finalImageUrl,
                 available_in_store: !formData.whatsapp_exclusive,
                 whatsapp_campaign_completed: false,
+                size: formData.size === 'Outros' ? customSize : formData.size,
             };
 
             if (editingProduct) {
@@ -173,6 +178,7 @@ export default function AdminProductsPage() {
 
     const handleEdit = (product: any) => {
         setEditingProduct(product);
+        const isCustom = product.size && !SIZES.slice(0, -1).includes(product.size);
         setFormData({
             name: product.name,
             description: product.description || "",
@@ -181,7 +187,9 @@ export default function AdminProductsPage() {
             image_url: product.image_url || "",
             is_featured: product.is_featured || false,
             whatsapp_exclusive: product.whatsapp_exclusive || false,
+            size: isCustom ? 'Outros' : (product.size || ''),
         });
+        if (isCustom) setCustomSize(product.size);
         setImagePreview(product.image_url || "");
         setSelectedFile(null);
         setShowModal(true);
@@ -222,7 +230,9 @@ export default function AdminProductsPage() {
             image_url: "",
             is_featured: false,
             whatsapp_exclusive: false,
+            size: "",
         });
+        setCustomSize("");
         setImagePreview("");
         setSelectedFile(null);
         setEditingProduct(null);
@@ -273,6 +283,7 @@ export default function AdminProductsPage() {
                             <thead>
                                 <tr className="bg-soft/50">
                                     <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Produto</th>
+                                    <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Tamanho</th>
                                     <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Categoria</th>
                                     <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Preço</th>
                                     <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
@@ -318,6 +329,13 @@ export default function AdminProductsPage() {
                                                         )}
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                {product.size ? (
+                                                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-black bg-primary/10 text-primary">{product.size}</span>
+                                                ) : (
+                                                    <span className="text-gray-300 font-bold text-xs">—</span>
+                                                )}
                                             </td>
                                             <td className="px-8 py-6 font-bold text-gray-500">
                                                 {product.categories?.name || "Sem categoria"}
@@ -409,6 +427,34 @@ export default function AdminProductsPage() {
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                                         />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tamanho</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {SIZES.map(s => (
+                                                <button
+                                                    key={s}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, size: s })}
+                                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${formData.size === s
+                                                            ? 'bg-primary text-white shadow-sm'
+                                                            : 'bg-soft text-gray-500 hover:bg-primary/10'
+                                                        }`}
+                                                >
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {formData.size === 'Outros' && (
+                                            <input
+                                                type="text"
+                                                placeholder="Ex: 6 meses, 1 ano..."
+                                                className="w-full p-3 bg-soft rounded-2xl border-none font-bold text-muted-text mt-2"
+                                                value={customSize}
+                                                onChange={(e) => setCustomSize(e.target.value)}
+                                            />
+                                        )}
                                     </div>
                                 </div>
 
