@@ -160,7 +160,6 @@ export default function AdminWhatsAppDashboard() {
                     name, 
                     slug, 
                     image_url, 
-                    is_active, 
                     created_at,
                     products:products(count)
                 `).eq('products.status', 'available'),
