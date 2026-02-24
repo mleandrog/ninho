@@ -1,75 +1,88 @@
 # 🚀 Guia de Deploy Padronizado - Ninho Lar
 
-Agora que estabilizamos o ambiente, você tem duas opções de deploy. Escolha a que preferir:
+## Sequência Correta de Deploy (Git → Servidor)
 
----
-
-## Opção 1: Deploy via ZIP (Standalone) - Mais Seguro 🛡️
-*Ideal para servidores com pouca memória, pois a build é feita no seu computador.*
-
-1. **No seu VS Code:**
-   ```bash
-   npm run build:prod
-   ```
-2. **Suba o arquivo:** Pegue o `deploy-202X-XX.zip` gerado e suba para `/etc/icontainer/apps/openresty/openresty/www/sites/ninhoelar.com.br/index`.
-3. **No Terminal do Servidor:**
-   ```bash
-   rm -rf * .next
-   unzip -o deploy-[nome].zip
-   pm2 restart ninho-lar
-   ```
-
----
-
-## Opção 2: Deploy Direto via Git (Push & Pull) - Mais Rápido ⚡
-*Ideal para pequenas alterações sem precisar baixar/subir arquivos.*
-
-### 1. No seu Computador (Uma única vez)
-Garanta que suas alterações estão no GitHub:
-```bash
-git add .
-git commit -m "Deploy: Atualização do sistema"
-git push origin main
-```
-
-### 2. No Servidor (Via SSH ou Terminal do Painel)
-Entre na pasta do projeto e siga esta sequência:
+> ⚠️ **Siga TODOS os passos em ordem. Pular qualquer um causa tela branca ou CSS quebrado.**
 
 ```bash
-# 1. Entrar na pasta
+# 1. Entrar na pasta do projeto
 cd /etc/icontainer/apps/openresty/openresty/www/sites/ninhoelar.com.br/index
 
-# 2. SE DER ERRO DE "not a git repository", rode este COMANDO DE RESGATE:
-git init
-git remote add origin https://github.com/mleandrog/ninho.git
-git fetch origin
-git reset --hard origin/main
-
-# 3. Puxar código novo (se já for um repositório Git)
+# 2. Puxar o código mais recente
 git pull origin main
+
+# 3. Apagar o build antigo (OBRIGATÓRIO — evita cache de chunks)
+rm -rf .next
 
 # 4. Instalar dependências e buildar
 npm install
 npm run build
 
-# 5. Organizar arquivos (Passo vital para o modo Standalone)
-# Garanta que o arquivo .env.local existe na pasta antes de rodar:
+# 5. ⚠️ OBRIGATÓRIO — Copiar arquivos estáticos para o Standalone (sem isso = CSS quebrado!)
 cp .env.local .next/standalone/.env
-cp -r public .next/standalone/
-cp -r .next/static .next/standalone/.next/
+cp -rf public .next/standalone/public
+cp -rf .next/static .next/standalone/.next/static
 
-# 6. Reiniciar o processo
+# 6. Recriar o processo PM2 (use delete + start, não restart)
 pm2 delete ninho-lar
 pm2 start .next/standalone/server.js --name ninho-lar
+pm2 save
 ```
-
-> [!IMPORTANT]
-> Se a `npm run build` falhar no servidor por falta de memória (RAM), use a **Opção 1 (ZIP)**. A opção ZIP é a "prova de balas" porque o servidor só precisa rodar o arquivo pronto.
 
 ---
 
-## � Dicas de Manutenção
+## ⚠️ Problemas Comuns e Soluções
 
-- **Cache do Navegador:** Se não ver a mudança, teste `https://ninhoelar.com.br/admin/whatsapp?cache=off`.
-- **Logs de Erro:** Se o site não abrir, use `pm2 logs ninho-lar` para ver o que está acontecendo.
-- **Limpeza:** Periodicamente, apague os arquivos `.zip` antigos da pasta para não ocupar espaço no servidor.
+### 🔴 Tela em Branco / CSS Quebrado
+Os arquivos estáticos não foram copiados para o standalone. Rode:
+```bash
+cd /etc/icontainer/apps/openresty/openresty/www/sites/ninhoelar.com.br/index
+cp -rf .next/static .next/standalone/.next/static
+cp -rf public .next/standalone/public
+cp .env.local .next/standalone/.env
+pm2 restart ninho-lar
+```
+
+### 🔴 EADDRINUSE: address already in use :3000
+Outro processo PM2 está ocupando a porta 3000. Identifique e mate:
+```bash
+pm2 list
+pm2 delete <nome-do-processo-antigo>
+pm2 restart ninho-lar
+```
+
+### 🔴 Alterações não Refletem no Browser
+1. Hard refresh: `Ctrl + Shift + R`
+2. Se persistir, o build não foi limpo. Rode o `rm -rf .next` e refaça o deploy completo.
+
+### 🔴 Site não abre / erro 502
+```bash
+pm2 logs ninho-lar --lines 30 --nostream
+ss -tlnp | grep 3000
+```
+
+---
+
+## 🛡️ Opção Alternativa: Deploy via ZIP (Caso o build falhe por falta de RAM)
+
+1. **No seu computador:** `npm run build:prod` → gera `deploy-XXXX.zip`
+2. **Suba o ZIP** para a pasta do projeto no servidor
+3. **No servidor:**
+```bash
+rm -rf * .next
+unzip -o deploy-[nome].zip
+cp -rf public .next/standalone/
+cp -rf .next/static .next/standalone/.next/static
+pm2 delete ninho-lar
+pm2 start .next/standalone/server.js --name ninho-lar
+pm2 save
+```
+
+---
+
+## 📋 Dicas Rápidas
+
+- **Logs:** `pm2 logs ninho-lar`
+- **Status:** `pm2 list`
+- **Cache do Nginx:** `openresty -s reload` ou `nginx -s reload`
+- **Limpeza:** Apague `.zip` antigos periodicamente

@@ -23,7 +23,7 @@ const menuItems = [
     { icon: Package, label: "Produtos", href: "/admin/produtos" },
     { icon: FolderTree, label: "Categorias", href: "/admin/categorias" },
     { icon: ShoppingBag, label: "Pedidos", href: "/admin/pedidos" },
-    { icon: MessageSquare, label: "WhatsApp", href: "/admin/whatsapp" },
+    { icon: MessageSquare, label: "Campanhas", href: "/admin/whatsapp" },
     { icon: Truck, label: "Entregadores", href: "/admin/entregadores" },
     { icon: MapPin, label: "Zonas de Frete", href: "/admin/frete" },
     { icon: TrendingUp, label: "Relatórios", href: "/admin/relatorios" },

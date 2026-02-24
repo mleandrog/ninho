@@ -60,6 +60,10 @@ export default function AdminWhatsAppDashboard() {
     const [loading, setLoading] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
 
+    // Filtros
+    const [search, setSearch] = useState("");
+    const [filterStatus, setFilterStatus] = useState<CampaignStatus | "">("");
+
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -132,6 +136,12 @@ export default function AdminWhatsAppDashboard() {
             setLoading(false);
         }
     };
+
+    const filteredCampaigns = campaigns.filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = filterStatus === "" || c.status === filterStatus;
+        return matchesSearch && matchesStatus;
+    });
 
     // ─── Campaign actions ─────────────────────────────────────────────────────
     const openModal = () => {
@@ -353,7 +363,7 @@ export default function AdminWhatsAppDashboard() {
                 <header className="flex justify-between items-center mb-12">
                     <div>
                         <h1 className="text-4xl font-black text-muted-text lowercase tracking-tighter">
-                            WhatsApp
+                            Campanhas
                         </h1>
                         <p className="text-gray-400 font-bold mt-1">Gestão de campanhas, grupos e disparos automáticos</p>
                     </div>
@@ -423,13 +433,39 @@ export default function AdminWhatsAppDashboard() {
                 {activeTab === "campaigns" && (
                     <div className="space-y-6">
                         {/* Top bar */}
-                        <div className="flex justify-between items-center">
-                            <div>
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                            <div className="flex-1">
                                 <h2 className="text-2xl font-black text-muted-text">Campanhas Programadas</h2>
                                 <p className="text-sm font-bold text-gray-400 mt-0.5">As campanhas são disparadas automaticamente no horário configurado</p>
+
+                                {/* Filtros integrados no top bar */}
+                                <div className="mt-6 flex flex-wrap gap-3">
+                                    <div className="relative flex-1 min-w-[200px]">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <Send size={16} className="rotate-[-45deg]" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar campanha..."
+                                            className="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-sm outline-none shadow-premium focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-300"
+                                            value={search}
+                                            onChange={e => setSearch(e.target.value)}
+                                        />
+                                    </div>
+                                    <select
+                                        className="pl-6 pr-10 py-3 bg-white rounded-2xl border-none font-black text-[10px] uppercase tracking-widest outline-none shadow-premium appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
+                                        value={filterStatus}
+                                        onChange={e => setFilterStatus(e.target.value as any)}
+                                    >
+                                        <option value="">Todos os Status</option>
+                                        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                                            <option key={key} value={key}>{cfg.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                             <Button
-                                className="h-14 px-8 rounded-full shadow-vibrant gap-2 font-black"
+                                className="h-14 px-8 rounded-full shadow-vibrant gap-2 font-black flex-shrink-0"
                                 onClick={openModal}
                             >
                                 <Plus size={20} /> Criar Campanha
@@ -441,15 +477,15 @@ export default function AdminWhatsAppDashboard() {
                             <div className="bg-white p-20 rounded-[2.5rem] flex justify-center shadow-premium">
                                 <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                             </div>
-                        ) : campaigns.length === 0 ? (
+                        ) : filteredCampaigns.length === 0 ? (
                             <div className="bg-white/60 border-4 border-dashed border-soft rounded-[3rem] p-24 text-center">
-                                <div className="text-6xl mb-4">📅</div>
-                                <h3 className="text-2xl font-black text-muted-text opacity-50">Nenhuma campanha criada</h3>
-                                <p className="text-gray-400 font-bold mt-2">Clique em "Criar Campanha" para começar</p>
+                                <div className="text-6xl mb-4">🔍</div>
+                                <h3 className="text-2xl font-black text-muted-text opacity-50">Nenhuma campanha encontrada</h3>
+                                <p className="text-gray-400 font-bold mt-2">Tente ajustar seus filtros de busca</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {campaigns.map(campaign => {
+                                {filteredCampaigns.map(campaign => {
                                     const st = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.pending;
                                     const progress = campaign.total_products > 0
                                         ? Math.round((campaign.products_sent / campaign.total_products) * 100)
