@@ -47,6 +47,8 @@ export default function AdminSettingsPage() {
             const { error } = await supabase
                 .from("whatsapp_settings")
                 .update({
+                    store_name: settings.store_name,
+                    whatsapp_number: settings.whatsapp_number,
                     keyword: settings.keyword,
                     rules_message: settings.rules_message,
                     final_message: settings.final_message,
@@ -138,8 +140,8 @@ export default function AdminSettingsPage() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-8 py-4 rounded-2xl font-black text-sm transition-all uppercase tracking-widest ${activeTab === tab
-                                    ? "bg-primary text-white shadow-vibrant scale-105"
-                                    : "text-gray-400 hover:text-muted-text hover:bg-white"
+                                ? "bg-primary text-white shadow-vibrant scale-105"
+                                : "text-gray-400 hover:text-muted-text hover:bg-white"
                                 }`}
                         >
                             {tab}
@@ -167,8 +169,9 @@ export default function AdminSettingsPage() {
                                     <input
                                         type="text"
                                         className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                        value={settings.store_name || "Ninho Lar"}
-                                        disabled
+                                        value={settings.store_name || ""}
+                                        onChange={e => setSettings({ ...settings, store_name: e.target.value })}
+                                        placeholder="Ex: Ninho Lar"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -177,7 +180,8 @@ export default function AdminSettingsPage() {
                                         type="text"
                                         className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                         value={settings.whatsapp_number || ""}
-                                        disabled
+                                        onChange={e => setSettings({ ...settings, whatsapp_number: e.target.value })}
+                                        placeholder="Ex: 5511999999999"
                                     />
                                 </div>
                             </div>
@@ -335,7 +339,15 @@ export default function AdminSettingsPage() {
 
                                 <div className="grid md:grid-cols-2 gap-6 pt-4">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão</label>
+                                        <div className="flex justify-between items-center px-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão</label>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "*" })} className="text-[10px] font-black text-primary p-1">B</button>
+                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "_" })} className="text-[10px] font-black text-primary p-1 italic">I</button>
+                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "🛍️" })} className="text-xs p-1">🛍️</button>
+                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "✨" })} className="text-xs p-1">✨</button>
+                                            </div>
+                                        </div>
                                         <textarea
                                             className="w-full p-5 bg-soft rounded-2xl border-none font-medium h-40 outline-none focus:ring-2 focus:ring-primary/20"
                                             value={settings.rules_message}
@@ -343,7 +355,15 @@ export default function AdminSettingsPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final Padrão</label>
+                                        <div className="flex justify-between items-center px-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final Padrão</label>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "*" })} className="text-[10px] font-black text-primary p-1">B</button>
+                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "_" })} className="text-[10px] font-black text-primary p-1 italic">I</button>
+                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "🎉" })} className="text-xs p-1">🎉</button>
+                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "🐥" })} className="text-xs p-1">🐥</button>
+                                            </div>
+                                        </div>
                                         <textarea
                                             className="w-full p-5 bg-soft rounded-2xl border-none font-medium h-40 outline-none focus:ring-2 focus:ring-primary/20"
                                             value={settings.final_message}

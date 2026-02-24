@@ -52,12 +52,11 @@ const STATUS_CONFIG: Record<CampaignStatus, { label: string; color: string; dot:
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminWhatsAppDashboard() {
-    const [activeTab, setActiveTab] = useState<"campaigns" | "groups" | "connection" | "bags">("campaigns");
+    const [activeTab, setActiveTab] = useState<"campaigns" | "groups" | "connection">("campaigns");
     const [categories, setCategories] = useState<any[]>([]);
     const [groups, setGroups] = useState<any[]>([]);
     const [settings, setSettings] = useState<any>(null);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [bags, setBags] = useState<any[]>([]);
     const [serverTime, setServerTime] = useState<string | null>(null);
     const [settingsTab, setSettingsTab] = useState<"general" | "payments">("general");
     const [loading, setLoading] = useState(false);
@@ -152,18 +151,13 @@ export default function AdminWhatsAppDashboard() {
     const fetchInitialData = async () => {
         // Removemos o setLoading(true) do polling para não ficar piscando
         try {
-            const [catRes, grpRes, setRes, campRes, bagRes] = await Promise.all([
+            const [catRes, grpRes, setRes, campRes] = await Promise.all([
                 supabase.from("categories").select("*"),
                 supabase.from("whatsapp_groups").select("*").order("created_at", { ascending: false }),
                 supabase.from("whatsapp_settings").select("*").limit(1).single(),
                 supabase
                     .from("whatsapp_campaigns")
                     .select("*, categories:category_id(name)")
-                    .order("created_at", { ascending: false }),
-                supabase
-                    .from("priority_queue")
-                    .select("*, products(name, price, image_url)")
-                    .in("status", ["waiting", "notified"])
                     .order("created_at", { ascending: false }),
             ]);
             setCategories(catRes.data || []);

@@ -28,20 +28,78 @@ export default function CheckoutPage() {
     });
 
     const [shippingFee, setShippingFee] = useState(0);
+    const [distance, setDistance] = useState<number | null>(null);
     const total = totalPrice() + shippingFee;
+
+    // Buscar configurações globais (coordenadas da loja)
+    const [storeConfig, setStoreConfig] = useState<any>(null);
+    useEffect(() => {
+        supabase.from("whatsapp_settings").select("*").limit(1).single()
+            .then(({ data }) => setStoreConfig(data));
+    }, []);
+
+    const fetchDestinationCoords = async (zip: string) => {
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${zip}/json/`);
+            const data = await res.json();
+            if (data.erro) return null;
+
+            const fullAddr = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`;
+            const coordsRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddr)}&limit=1`);
+            const coordsData = await coordsRes.json();
+
+            if (coordsData?.[0]) {
+                return {
+                    lat: parseFloat(coordsData[0].lat),
+                    lng: parseFloat(coordsData[0].lon),
+                    address: data
+                };
+            }
+        } catch (e) { console.error(e); }
+        return null;
+    };
+
+    const calculateRealDistance = async (dest: { lat: number, lng: number }) => {
+        if (!storeConfig?.store_lat || !storeConfig?.store_lng) return null;
+        try {
+            const url = `https://router.project-osrm.org/route/v1/driving/${storeConfig.store_lng},${storeConfig.store_lat};${dest.lng},${dest.lat}?overview=false`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.routes?.[0]?.distance) {
+                return data.routes[0].distance / 1000; // km
+            }
+        } catch (e) { console.error(e); }
+        return null;
+    };
 
     useEffect(() => {
         if (shippingMethod === "pickup") {
             setShippingFee(0);
-        } else if (address.zipcode.length >= 8) {
-            // Cálculo de frete simulado baseado em CEP
-            const zipPrefix = address.zipcode.substring(0, 2);
-            if (zipPrefix === "01") setShippingFee(10); // Centro SP
-            else setShippingFee(25); // Resto
-        } else {
-            setShippingFee(15); // Valor base
+            setDistance(null);
+        } else if (address.zipcode.replace(/\D/g, "").length === 8) {
+            const timer = setTimeout(async () => {
+                const dest = await fetchDestinationCoords(address.zipcode);
+                if (dest) {
+                    setAddress((prev: any) => ({
+                        ...prev,
+                        street: dest.address.logradouro,
+                        neighborhood: dest.address.bairro,
+                        city: dest.address.localidade,
+                        state: dest.address.uf
+                    }));
+
+                    const km = await calculateRealDistance(dest);
+                    if (km !== null) {
+                        setDistance(km);
+                        // Regra de frete: R$ 5 fixo + R$ 2 por km
+                        const fee = 5 + (km * 2);
+                        setShippingFee(Math.ceil(fee));
+                    }
+                }
+            }, 1000);
+            return () => clearTimeout(timer);
         }
-    }, [address.zipcode, shippingMethod]);
+    }, [address.zipcode, shippingMethod, storeConfig]);
 
     useEffect(() => {
         if (items.length === 0) {
@@ -143,7 +201,10 @@ export default function CheckoutPage() {
                                 >
                                     <Truck size={28} />
                                     <div className="text-left font-black text-lg">Entrega em Casa</div>
-                                    <div className="text-left text-sm font-bold opacity-70">R$ {shippingFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • 1-2 dias úteis</div>
+                                    <div className="text-left text-sm font-bold opacity-70">
+                                        {shippingFee > 0 ? `R$ ${shippingFee.toFixed(2)}` : "Calculando..."}
+                                        {distance && ` • ${distance.toFixed(1)}km`}
+                                    </div>
                                 </button>
                                 <button
                                     onClick={() => setShippingMethod("pickup")}

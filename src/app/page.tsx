@@ -26,6 +26,7 @@ export default function Home() {
         .select("*")
         .eq("is_featured", true)
         .eq("available_in_store", true) // Apenas produtos disponíveis na loja
+        .eq("is_whatsapp_exclusive", false) // Ocultar exclusivos do WhatsApp
         .limit(4);
 
       if (error) throw error;
@@ -113,9 +114,9 @@ export default function Home() {
                 <div className="absolute -inset-12 bg-white rounded-[30% 70% 70% 30% / 30% 30% 70% 70%] animate-pulse opacity-20 blur-2xl group-hover:opacity-40 transition-opacity" />
                 <div className="relative z-10 bg-white rounded-[5rem] p-5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rotate-3 border-[12px] border-white overflow-hidden max-w-2xl">
                   <div className="aspect-[4/5] bg-soft rounded-[4rem] overflow-hidden flex items-center justify-center relative">
-                    {/* Placeholder for real image */}
+                    {/* Real Logo Image */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent" />
-                    <span className="text-[12rem] animate-float drop-shadow-xl relative z-20">🐥</span>
+                    <img src="/logo-ninho.png" alt="Ninho Lar" className="w-[80%] h-auto animate-float drop-shadow-2xl relative z-20" />
 
                     {/* Decorative Star */}
                     <Star size={40} className="absolute top-10 right-10 text-accent fill-accent animate-spin-slow" />
@@ -316,9 +317,7 @@ export default function Home() {
         <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-20">
           <div className="space-y-8">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-primary rounded-[2rem] flex items-center justify-center text-white font-black text-3xl shadow-vibrant rotate-[-5deg]">
-                N
-              </div>
+              <img src="/logo-ninho.png" alt="Ninho Lar" className="h-20 w-auto" />
               <span className="text-4xl font-black tracking-tighter">Ninho<span className="text-primary">Lar</span></span>
             </div>
             <p className="text-lg font-bold text-gray-400 leading-relaxed">

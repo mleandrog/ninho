@@ -18,9 +18,7 @@ export function Header() {
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/20">
                 <div className="container mx-auto px-6 h-20 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-vibrant">
-                            N
-                        </div>
+                        <img src="/logo-ninho.png" alt="Ninho Lar" className="h-12 w-auto" />
                         <span className="text-xl font-extrabold text-muted-text hidden sm:block">Ninho Lar</span>
                     </Link>
 
