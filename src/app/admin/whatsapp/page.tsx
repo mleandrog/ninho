@@ -566,14 +566,14 @@ export default function AdminWhatsAppDashboard() {
                                                 <div className="flex items-center gap-3">
                                                     {campaign.status === 'running' && (
                                                         <Button
-                                                            size="xs"
+                                                            size="sm"
                                                             variant="destructive"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleStopCampaign(campaign.id);
                                                             }}
                                                             disabled={isStopping === campaign.id}
-                                                            className="h-6 px-3 rounded-full text-[9px] font-black uppercase tracking-tighter"
+                                                            className="h-7 px-3 rounded-full text-[9px] font-black uppercase tracking-tighter"
                                                         >
                                                             {isStopping === campaign.id ? 'Parando...' : 'Stop'}
                                                         </Button>

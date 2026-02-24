@@ -7,7 +7,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost';
+    variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost' | 'destructive';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
 }
@@ -20,6 +20,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             accent: 'bg-accent text-accent-foreground hover:bg-accent/90 active:scale-95',
             outline: 'border-2 border-primary text-primary hover:bg-primary/10',
             ghost: 'hover:bg-primary/10 text-primary',
+            destructive: 'bg-red-500 text-white hover:bg-red-600 active:scale-95',
         };
 
         const sizes = {
