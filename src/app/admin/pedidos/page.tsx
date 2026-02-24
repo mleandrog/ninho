@@ -95,8 +95,8 @@ export default function AdminOrdersPage() {
                                             <status.icon size={28} />
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="text-xl font-black text-muted-text">Pedido #{order.id.slice(0, 8)}</h3>
-                                            <p className="text-sm font-bold text-gray-400">Cliente: <span className="text-muted-text">{order.profiles?.full_name || 'N/A'}</span></p>
+                                            <h3 className="text-xl font-black text-muted-text">Pedido #{order.order_number || order.id.slice(0, 8)}</h3>
+                                            <p className="text-sm font-bold text-gray-400">Cliente: <span className="text-muted-text">{order.profiles?.full_name || order.customer_name || 'N/A'}</span></p>
                                             <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">{new Date(order.created_at).toLocaleString()}</div>
                                         </div>
                                     </div>
