@@ -59,6 +59,7 @@ export default function AdminWhatsAppDashboard() {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [bags, setBags] = useState<any[]>([]);
     const [serverTime, setServerTime] = useState<string | null>(null);
+    const [settingsTab, setSettingsTab] = useState<"general" | "payments">("general");
     const [loading, setLoading] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
 
@@ -448,14 +449,14 @@ export default function AdminWhatsAppDashboard() {
                             <h2 className="text-2xl font-black text-muted-text">Configurações Globais</h2>
                             <div className="flex bg-soft p-1.5 rounded-2xl gap-1">
                                 <button
-                                    onClick={() => (window as any)._settingsTab = 'general'}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${(window as any)._settingsTab !== 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
+                                    onClick={() => setSettingsTab('general')}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${settingsTab !== 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
                                 >
                                     Geral
                                 </button>
                                 <button
-                                    onClick={() => (window as any)._settingsTab = 'payments'}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${(window as any)._settingsTab === 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
+                                    onClick={() => setSettingsTab('payments')}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${settingsTab === 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
                                 >
                                     Pagamentos
                                 </button>
@@ -469,7 +470,7 @@ export default function AdminWhatsAppDashboard() {
                             [data-tab="payments"] .settings-content-payments { display: block; }
                         `}</style>
 
-                        <div id="settings-container" data-tab={(window as any)._settingsTab || 'general'}>
+                        <div id="settings-container" data-tab={settingsTab}>
                             {/* ABA GERAL */}
                             <div className="settings-content-general space-y-6">
                                 <div className="grid md:grid-cols-2 gap-6">
@@ -809,7 +810,11 @@ export default function AdminWhatsAppDashboard() {
                                                         <Trash2 size={16} />
                                                     </button>
                                                     <button
-                                                        onClick={() => window.location.href = `/admin/whatsapp/campanhas/${campaign.id}`}
+                                                        onClick={() => {
+                                                            if (typeof window !== "undefined") {
+                                                                window.location.href = `/admin/whatsapp/campanhas/${campaign.id}`;
+                                                            }
+                                                        }}
                                                         className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 transition-all"
                                                     >
                                                         <ChevronRight size={18} />
@@ -940,8 +945,10 @@ export default function AdminWhatsAppDashboard() {
                                                     placeholder="https://seu-site.com/api/whatsapp/webhook"
                                                     defaultValue={typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}/api/whatsapp/webhook` : ""} />
                                                 <Button size="sm" className="rounded-xl px-4 font-black text-[10px]"
-                                                    onClick={async () => {
-                                                        const url = (document.getElementById("webhook-url") as HTMLInputElement).value;
+                                                    onClick={async (e) => {
+                                                        const target = e.currentTarget.parentElement;
+                                                        const input = target?.querySelector('input') as HTMLInputElement;
+                                                        const url = input?.value;
                                                         if (!url) return toast.error("Insira uma URL válida");
                                                         const tid = toast.loading("Configurando Webhook...");
                                                         try {

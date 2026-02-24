@@ -122,7 +122,9 @@ export default function CampaignCartPage({
             // REDIRECIONAMENTO AUTOMÁTICO se for Link de Pagamento
             if (paymentMethod === 'link' && data.payment?.invoiceUrl) {
                 setTimeout(() => {
-                    window.location.href = data.payment.invoiceUrl;
+                    if (typeof window !== "undefined") {
+                        window.location.href = data.payment.invoiceUrl;
+                    }
                 }, 1500); // Pequeno delay para o usuário ver o sucesso
             }
         } catch (err: any) {
