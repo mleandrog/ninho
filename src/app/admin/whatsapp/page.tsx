@@ -164,24 +164,6 @@ export default function AdminWhatsAppDashboard() {
             setGroups(grpRes.data || []);
             setSettings(setRes.data);
             setCampaigns((campRes.data as Campaign[]) || []);
-
-            // Agrupar sacolas por cliente
-            if (bagRes.data) {
-                const grouped = bagRes.data.reduce((acc: any, item: any) => {
-                    const phone = item.customer_phone;
-                    if (!acc[phone]) acc[phone] = {
-                        phone,
-                        name: item.customer_name,
-                        items: [],
-                        total: 0,
-                        last_update: item.created_at
-                    };
-                    acc[phone].items.push(item);
-                    acc[phone].total += Number(item.products?.price || 0);
-                    return acc;
-                }, {});
-                setBags(Object.values(grouped));
-            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -644,67 +626,6 @@ export default function AdminWhatsAppDashboard() {
                     </button>
                 </div>
 
-                {/* Bags Tab content */}
-                {activeTab === "bags" && (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-white">
-                            <div>
-                                <h2 className="text-xl font-black text-muted-text lowercase tracking-tighter">Sacolas de Clientes</h2>
-                                <p className="text-xs font-bold text-gray-400">Total de {bags.length} sacolas ativas com itens reservados.</p>
-                            </div>
-                        </div>
-
-                        {bags.length === 0 ? (
-                            <div className="bg-white p-20 rounded-[3rem] text-center shadow-premium border border-white">
-                                <ShoppingBag className="w-16 h-16 text-soft mx-auto mb-6 opacity-20" />
-                                <h3 className="text-xl font-black text-gray-300 lowercase tracking-tighter">Nenhuma sacola aberta no momento</h3>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {bags.map((bag: any) => (
-                                    <div key={bag.phone} className="bg-white rounded-[2.5rem] shadow-premium border border-white overflow-hidden flex flex-col hover:border-primary/20 transition-all">
-                                        <div className="p-6 border-b border-soft flex-1">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black uppercase shadow-sm">
-                                                    {bag.name?.charAt(0) || 'U'}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <h3 className="font-black text-muted-text truncate text-sm">{bag.name || 'Usuário'}</h3>
-                                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">{bag.phone}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3 mt-4">
-                                                {bag.items.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex items-center gap-3 bg-soft p-2 rounded-xl">
-                                                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-white shrink-0 shadow-sm">
-                                                            <img src={item.products?.image_url} alt="" className="w-full h-full object-cover" />
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="text-[10px] font-black text-muted-text truncate">{item.products?.name}</p>
-                                                            <p className="text-[9px] font-bold text-primary">R$ {Number(item.products?.price || 0).toFixed(2).replace('.', ',')}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="p-6 bg-primary/[0.02] flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total da Sacola</p>
-                                                <p className="text-lg font-black text-primary">R$ {bag.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Itens</p>
-                                                <p className="text-xs font-black text-muted-text">{bag.items.length}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
                 {/* ── CAMPAIGNS TAB ── */}
                 {activeTab === "campaigns" && (
                     <div className="space-y-6">
