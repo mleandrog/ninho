@@ -75,10 +75,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ status: 'ignored', reason: 'Not a message event' });
         }
 
-        // Se a mensagem for 'fromMe' (do próprio bot), permitimos se tiver a palavra-chave (útil para teste)
-        // Mas o ideal para produção é filtrar, então vamos logar isso
+        // Ignorar mensagens enviadas pelo próprio bot para evitar loop
         if (data?.key?.fromMe) {
-            console.log('[Webhook] Mensagem do próprio bot detectada');
+            return NextResponse.json({ status: 'ignored', reason: 'fromMe' });
         }
 
         // Extração robusta da mensagem (Evolution v2)
@@ -89,12 +88,26 @@ export async function POST(request: NextRequest) {
             "";
 
         const phone = data.key?.remoteJid;
-        // Priorizar participantAlt (v2) ou limpar o participant lid
-        const rawParticipant = data.key?.participantAlt || data.key?.participant || phone;
-        const participant = rawParticipant.split('@')[0]; // Pega apenas a parte numérica/lid
+
+        // Extrair o JID do participante (quem enviou a mensagem dentro do grupo)
+        // Em grupos, participant é quem enviou. Em DMs, é o próprio remoteJid
+        const rawParticipant = data.key?.participant || data.key?.participantAlt;
+        // leadPhone: número limpo sem @s.whatsapp.net, @lid, etc.
+        const leadPhone = rawParticipant
+            ? rawParticipant.split('@')[0]
+            : phone?.split('@')[0] || '';
+
+        console.log('[Webhook] Dados extraídos:', {
+            phone,
+            rawParticipant,
+            leadPhone,
+            message: message?.substring(0, 50),
+            isGroup: phone?.endsWith('@g.us'),
+            fromMe: data?.key?.fromMe
+        });
 
         if (!message || !phone) {
-            return NextResponse.json({ status: 'ignored' });
+            return NextResponse.json({ status: 'ignored', reason: 'no message or phone' });
         }
 
         // --- LÓGICA DE CAPTURA DE LEADS (INTERESSADOS) ---
@@ -111,15 +124,17 @@ export async function POST(request: NextRequest) {
             try {
                 if (phone.endsWith('@g.us')) {
                     // 1. Identificar o grupo
-                    const { data: groupData } = await supabase
+                    const { data: groupData, error: groupError } = await supabase
                         .from('whatsapp_groups')
                         .select('id')
                         .eq('group_jid', phone)
                         .maybeSingle();
 
+                    console.log('[Lead Capture] Grupo busca:', { phone, groupData, groupError });
+
                     if (groupData) {
                         // 2. Identificar a campanha ativa para este grupo
-                        const { data: campaignData } = await supabase
+                        const { data: campaignData, error: campaignError } = await supabase
                             .from('whatsapp_campaigns')
                             .select('*')
                             .contains('group_ids', [groupData.id])
@@ -127,6 +142,8 @@ export async function POST(request: NextRequest) {
                             .order('started_at', { ascending: false })
                             .limit(1)
                             .maybeSingle();
+
+                        console.log('[Lead Capture] Campanha busca:', { groupId: groupData.id, campaignData, campaignError });
 
                         if (campaignData) {
                             let productName = "Referência Direta (Não citou produto)";
@@ -182,9 +199,9 @@ export async function POST(request: NextRequest) {
                                 }
                             }
 
-                            const jid = data.key?.participantAlt || data.key?.participant || phone;
-                            const leadPhone = jid.split('@')[0];
                             const contactName = data.pushName || leadPhone;
+
+                            console.log('[Lead Capture] Dados do lead:', { leadPhone, contactName, productId, productName });
 
                             // Verificar se o lead já participou deste produto nesta campanha
                             const { data: existingLead } = await supabase
