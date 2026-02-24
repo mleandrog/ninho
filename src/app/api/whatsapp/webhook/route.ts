@@ -92,14 +92,15 @@ export async function POST(request: NextRequest) {
         // Extrair o JID do participante (quem enviou a mensagem dentro do grupo)
         // Em grupos, participant é quem enviou. Em DMs, é o próprio remoteJid
         const rawParticipant = data.key?.participant || data.key?.participantAlt;
-        // leadPhone: número limpo sem @s.whatsapp.net, @lid, etc.
-        const leadPhone = rawParticipant
-            ? rawParticipant.split('@')[0]
-            : phone?.split('@')[0] || '';
+        // leadPhoneRaw: JID completo para envio de mensagem (ex: 5511999999999@s.whatsapp.net ou 51067261812803@lid)
+        // leadPhoneClean: número limpo apenas para identificação/armazenamento
+        const leadPhoneRaw = rawParticipant || phone || '';
+        const leadPhone = leadPhoneRaw.split('@')[0];
 
         console.log('[Webhook] Dados extraídos:', {
             phone,
             rawParticipant,
+            leadPhoneRaw,
             leadPhone,
             message: message?.substring(0, 50),
             isGroup: phone?.endsWith('@g.us'),
@@ -223,12 +224,13 @@ export async function POST(request: NextRequest) {
                                 });
                                 console.log(`[Lead Capture] Novo lead salvo: ${contactName} / Produto: ${productName}`);
 
-                                // Se o produto foi identificado de forma exata, engatilha a fila
+                                // Se o produto foi identificado, engatilha a fila passando o JID completo
                                 if (productId) {
                                     console.log('[Webhook] Tentando adicionar à fila:', {
                                         campaignId: campaignData.id,
                                         productId,
                                         leadPhone,
+                                        leadPhoneRaw,
                                         contactName
                                     });
 
@@ -236,7 +238,8 @@ export async function POST(request: NextRequest) {
                                     await queueService.addToQueue(
                                         campaignData.id,
                                         productId,
-                                        leadPhone,
+                                        leadPhone,      // armazenamento/identificação
+                                        leadPhoneRaw,   // JID completo para envio da mensagem
                                         contactName,
                                         message
                                     );

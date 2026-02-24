@@ -6,9 +6,11 @@ const EXPIRATION_MINUTES = 15;
 export const queueService = {
     /**
      * Adiciona um lead na fila de um produto. Se for o primeiro (ou se a fila estiver vazia de 'processing'), aciona.
+     * @param phone - Número limpo (para identificação e deduplicação)
+     * @param phoneRaw - JID completo com sufixo (@s.whatsapp.net ou @lid) para envio de mensagem
      */
-    async addToQueue(campaignId: string, productId: number, phone: string, customerName: string, keyword: string) {
-        console.log('[Queue] Adicionando à fila:', { campaignId, productId, phone, customerName });
+    async addToQueue(campaignId: string, productId: number, phone: string, phoneRaw: string, customerName: string, keyword: string) {
+        console.log('[Queue] Adicionando à fila:', { campaignId, productId, phone, phoneRaw, customerName });
         try {
             // Verificar se o cliente já está na fila deste produto
             const { data: existing } = await supabase
@@ -23,13 +25,14 @@ export const queueService = {
                 return { success: false, message: 'Cliente já está na fila.' };
             }
 
-            // Inserir na fila
+            // Inserir na fila (armazenamos phoneRaw para uso no envio de mensagens)
             const { error: insertError } = await supabase
                 .from('priority_queue')
                 .insert({
                     campaign_id: campaignId,
                     product_id: productId,
                     customer_phone: phone,
+                    customer_phone_raw: phoneRaw,
                     customer_name: customerName,
                     keyword_used: keyword,
                     status: 'waiting'
@@ -37,7 +40,7 @@ export const queueService = {
 
             if (insertError) throw insertError;
 
-            console.log('[Queue] Lead adicionado com sucesso:', phone);
+            console.log('[Queue] Lead adicionado com sucesso:', phone, '| JID:', phoneRaw);
             // Tentar processar a fila (caso ele seja o primeiro e não tenha ninguém processing)
             await this.processNextInQueue(campaignId, productId);
             return { success: true };
@@ -165,8 +168,12 @@ export const queueService = {
                 })
                 .eq('id', queueId);
 
+            // Usar JID completo se disponível, senão o número limpo
+            const destination = nextInLine.customer_phone_raw || nextInLine.customer_phone;
+            console.log(`[QueueService] Enviando DM para: ${destination}`);
+
             // Enviar mensagem via Evolution API
-            await evolutionService.sendMessage(nextInLine.customer_phone, message);
+            await evolutionService.sendMessage(destination, message);
 
             console.log(`[QueueService] Pedido ${orderNumber} criado e usuário ${nextInLine.customer_name} notificado. Queue ID: ${queueId}`);
 
