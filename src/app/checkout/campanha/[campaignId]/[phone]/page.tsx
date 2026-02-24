@@ -54,9 +54,18 @@ export default function CampaignCartPage({
         setLoading(false);
     };
 
-    const removeItem = (id: string) => {
+    const removeItem = async (id: string) => {
         setItems(prev => prev.filter(item => item.id !== id));
-        toast.success('Item removido do carrinho.');
+        toast.success('Item removido do carrinho. Ele foi devolvido ao estoque para o próximo da fila.');
+        try {
+            await fetch('/api/checkout/campanha/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+        } catch (e) {
+            console.error('Erro ao devolver item para fila', e);
+        }
     };
 
     const totalAmount = items.reduce((acc, item) => acc + Number(item.products?.price || 0), 0);
@@ -125,7 +134,7 @@ export default function CampaignCartPage({
                     if (typeof window !== "undefined") {
                         window.location.href = data.payment.invoiceUrl;
                     }
-                }, 1500); // Pequeno delay para o usuário ver o sucesso
+                }, 500); // Reduzido o delay para agilizar
             }
         } catch (err: any) {
             toast.error(err.message);
@@ -156,7 +165,9 @@ export default function CampaignCartPage({
 
                     {paymentResult?.type === 'pix' && paymentResult.qrCode && (
                         <div className="bg-soft p-6 rounded-3xl mb-6">
-                            <p className="text-xs font-black uppercase text-gray-400 mb-4 tracking-widest">Pague com PIX</p>
+                            <p className="text-xs font-black uppercase text-gray-400 mb-4 tracking-widest text-[#E11D48]">
+                                ⚠️ ATENÇÃO: PAGUE AGORA PARA GARANTIR!
+                            </p>
                             <img
                                 src={`data:image/png;base64,${paymentResult.qrCode}`}
                                 alt="QR Code Pix"
@@ -175,20 +186,20 @@ export default function CampaignCartPage({
                     )}
 
                     {paymentResult?.invoiceUrl && (
-                        <div className="mb-8">
+                        <div className="mb-4">
                             <a
                                 href={paymentResult.invoiceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 text-primary font-black hover:underline"
+                                className="w-full py-4 flex items-center justify-center gap-2 bg-primary text-white font-black text-sm uppercase rounded-2xl hover:bg-primary/90 transition-all shadow-lg"
                             >
-                                Abrir Link de Pagamento <Eye size={16} />
+                                <Eye size={20} /> Concluir Pagamento no Asaas
                             </a>
                         </div>
                     )}
 
-                    <p className="text-gray-400 text-sm leading-relaxed">
-                        Enviamos os detalhes e o link de pagamento também para o seu WhatsApp. 💛
+                    <p className="text-gray-400 text-sm leading-relaxed mt-4 font-bold">
+                        Enviamos o link também pro seu WhatsApp caso perca essa página. Mas não demore!
                     </p>
                 </div>
             </div>

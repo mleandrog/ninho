@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import {
     Settings, Save, Info, MapPin, CreditCard,
     MessageSquare, Loader2, Search, Smartphone,
-    Globe, Shield, Bell
+    Globe, Shield, Bell, Bold, Italic
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -57,8 +57,8 @@ export default function AdminSettingsPage() {
                     payment_expiration_minutes: settings.payment_expiration_minutes,
                     asaas_pix_enabled: settings.asaas_pix_enabled,
                     asaas_card_enabled: settings.asaas_card_enabled,
-                    store_lat: settings.store_lat,
-                    store_lng: settings.store_lng,
+                    store_lat: parseFloat(String(settings.store_lat).replace(',', '.')) || null,
+                    store_lng: parseFloat(String(settings.store_lng).replace(',', '.')) || null,
                     store_address: settings.store_address,
                     store_cep: settings.store_cep,
                 })
@@ -71,6 +71,37 @@ export default function AdminSettingsPage() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const insertFormat = (field: 'rules_message' | 'final_message', format: string) => {
+        const textarea = document.getElementById(field) as HTMLTextAreaElement;
+        if (!textarea) {
+            // Fallback se não achar o textarea
+            setSettings({ ...settings, [field]: (settings[field] || "") + format });
+            return;
+        }
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = settings[field] || "";
+        const selectedText = text.substring(start, end);
+
+        let newText;
+        if (format === '*' || format === '_') {
+            newText = text.substring(0, start) + format + selectedText + format + text.substring(end);
+        } else {
+            newText = text.substring(0, start) + format + text.substring(end);
+        }
+
+        setSettings({ ...settings, [field]: newText });
+
+        setTimeout(() => {
+            textarea.focus();
+            const newCursorPos = format === '*' || format === '_'
+                ? start + format.length + selectedText.length + format.length
+                : start + format.length;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 10);
     };
 
     const handleCepBlur = async () => {
@@ -236,19 +267,21 @@ export default function AdminSettingsPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Latitude</label>
                                     <input
-                                        type="number" step="any"
+                                        type="text"
                                         className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
-                                        value={settings.store_lat || ""}
-                                        onChange={e => setSettings({ ...settings, store_lat: parseFloat(e.target.value) })}
+                                        value={settings.store_lat ?? ""}
+                                        onChange={e => setSettings({ ...settings, store_lat: e.target.value })}
+                                        placeholder="Ex: -23.550520"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Longitude</label>
                                     <input
-                                        type="number" step="any"
+                                        type="text"
                                         className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
-                                        value={settings.store_lng || ""}
-                                        onChange={e => setSettings({ ...settings, store_lng: parseFloat(e.target.value) })}
+                                        value={settings.store_lng ?? ""}
+                                        onChange={e => setSettings({ ...settings, store_lng: e.target.value })}
+                                        placeholder="Ex: -46.633308"
                                     />
                                 </div>
                             </div>
@@ -330,7 +363,7 @@ export default function AdminSettingsPage() {
                                         <input
                                             type="text"
                                             className="w-full p-5 bg-soft rounded-2xl border-none font-black text-lg uppercase tracking-widest text-primary outline-none focus:ring-2 focus:ring-primary/20"
-                                            value={settings.keyword}
+                                            value={settings?.keyword || ""}
                                             onChange={e => setSettings({ ...settings, keyword: e.target.value })}
                                         />
                                         <Smartphone className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
@@ -341,33 +374,53 @@ export default function AdminSettingsPage() {
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center px-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão</label>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "*" })} className="text-[10px] font-black text-primary p-1">B</button>
-                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "_" })} className="text-[10px] font-black text-primary p-1 italic">I</button>
-                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "🛍️" })} className="text-xs p-1">🛍️</button>
-                                                <button onClick={() => setSettings({ ...settings, rules_message: settings.rules_message + "✨" })} className="text-xs p-1">✨</button>
+                                            <div className="flex gap-1 items-center bg-soft p-1 rounded-xl border border-white/50">
+                                                <button onClick={() => insertFormat('rules_message', '*')} className="p-1.5 hover:bg-white rounded-lg transition-all text-primary" title="Negrito">
+                                                    <Bold size={12} />
+                                                </button>
+                                                <button onClick={() => insertFormat('rules_message', '_')} className="p-1.5 hover:bg-white rounded-lg transition-all text-primary" title="Itálico">
+                                                    <Italic size={12} />
+                                                </button>
+                                                <div className="w-px h-3 bg-gray-200 mx-1" />
+                                                {["🛍️", "✨", "🎉", "🐥"].map(emoji => (
+                                                    <button key={emoji} onClick={() => insertFormat('rules_message', emoji)} className="p-1 hover:bg-white rounded-lg transition-all text-base">
+                                                        {emoji}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
                                         <textarea
-                                            className="w-full p-5 bg-soft rounded-2xl border-none font-medium h-40 outline-none focus:ring-2 focus:ring-primary/20"
-                                            value={settings.rules_message}
+                                            id="rules_message"
+                                            className="w-full p-5 bg-soft rounded-[1.5rem] border-none font-medium h-40 outline-none focus:ring-2 focus:ring-primary/20 shadow-inner"
+                                            value={settings?.rules_message || ""}
                                             onChange={e => setSettings({ ...settings, rules_message: e.target.value })}
+                                            placeholder="Descreva as regras ou funcionamento da sua loja..."
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center px-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final Padrão</label>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "*" })} className="text-[10px] font-black text-primary p-1">B</button>
-                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "_" })} className="text-[10px] font-black text-primary p-1 italic">I</button>
-                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "🎉" })} className="text-xs p-1">🎉</button>
-                                                <button onClick={() => setSettings({ ...settings, final_message: settings.final_message + "🐥" })} className="text-xs p-1">🐥</button>
+                                            <div className="flex gap-1 items-center bg-soft p-1 rounded-xl border border-white/50">
+                                                <button onClick={() => insertFormat('final_message', '*')} className="p-1.5 hover:bg-white rounded-lg transition-all text-primary" title="Negrito">
+                                                    <Bold size={12} />
+                                                </button>
+                                                <button onClick={() => insertFormat('final_message', '_')} className="p-1.5 hover:bg-white rounded-lg transition-all text-primary" title="Itálico">
+                                                    <Italic size={12} />
+                                                </button>
+                                                <div className="w-px h-3 bg-gray-200 mx-1" />
+                                                {["📦", "✅", "🙌", "💙"].map(emoji => (
+                                                    <button key={emoji} onClick={() => insertFormat('final_message', emoji)} className="p-1 hover:bg-white rounded-lg transition-all text-base">
+                                                        {emoji}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
                                         <textarea
-                                            className="w-full p-5 bg-soft rounded-2xl border-none font-medium h-40 outline-none focus:ring-2 focus:ring-primary/20"
-                                            value={settings.final_message}
+                                            id="final_message"
+                                            className="w-full p-5 bg-soft rounded-[1.5rem] border-none font-medium h-40 outline-none focus:ring-2 focus:ring-primary/20 shadow-inner"
+                                            value={settings?.final_message || ""}
                                             onChange={e => setSettings({ ...settings, final_message: e.target.value })}
+                                            placeholder="Mensagem exibida ao finalizar o pedido..."
                                         />
                                     </div>
                                 </div>

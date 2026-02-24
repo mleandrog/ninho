@@ -143,14 +143,14 @@ export async function POST(req: Request) {
         const firstName = items[0].customer_name?.split(' ')[0] || 'Cliente';
         const phoneRaw = items[0].customer_phone_raw || phone;
 
-        let confirmMsg = `✅ Pedido *#${orderNumber}* confirmado com sucesso!\n\n` +
-            `Obrigado, ${firstName}! Em breve nossa equipe entrará em contato para combinar os detalhes da ${deliveryType === 'delivery' ? 'entrega' : 'sua sacola'}. 💛\n\n`;
+        let confirmMsg = `✅ Seu pedido *#${orderNumber}* foi reservado com sucesso!\n\n` +
+            `Obrigado, ${firstName}! Para garantir sua reserva e concluir a compra, realize o pagamento no link abaixo. 💛\n\n`;
 
         if (paymentData.invoiceUrl) {
-            confirmMsg += `Para realizar o pagamento, você pode acessar este link:\n🔗 ${paymentData.invoiceUrl}\n\n`;
+            confirmMsg += `🔗 *Link de Pagamento Seguro:*\n${paymentData.invoiceUrl}\n\n`;
         }
 
-        confirmMsg += `Qualquer dúvida, é só chamar aqui mesmo no WhatsApp.`;
+        confirmMsg += `Se precisar de ajuda, é só chamar aqui mesmo!`;
 
         await evolutionService.sendMessage(phoneRaw, confirmMsg);
 

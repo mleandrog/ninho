@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import {
     Send, Settings as SettingsIcon, Users, Plus, Trash2, QrCode,
     LogOut, Loader2, Smartphone, X, Calendar, Clock, CheckCircle2,
-    AlertCircle, Zap, ChevronRight, Play, Square, ShoppingBag, MapPin
+    AlertCircle, Zap, ChevronRight, Play, Square, ShoppingBag, MapPin,
+    Bold, Italic
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { evolutionService } from "@/services/evolution";
@@ -245,6 +246,36 @@ export default function AdminWhatsAppDashboard() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const insertFormat = (field: 'rules_message' | 'final_message', format: string) => {
+        const textarea = document.getElementById(field) as HTMLTextAreaElement;
+        if (!textarea) {
+            setSettings({ ...settings, [field]: (settings[field] || "") + format });
+            return;
+        }
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = settings[field] || "";
+        const selectedText = text.substring(start, end);
+
+        let newText;
+        if (format === '*' || format === '_') {
+            newText = text.substring(0, start) + format + selectedText + format + text.substring(end);
+        } else {
+            newText = text.substring(0, start) + format + text.substring(end);
+        }
+
+        setSettings({ ...settings, [field]: newText });
+
+        setTimeout(() => {
+            textarea.focus();
+            const newCursorPos = format === '*' || format === '_'
+                ? start + format.length + selectedText.length + format.length
+                : start + format.length;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 10);
     };
 
     const toggleGroupInForm = (groupId: string) => {
@@ -530,15 +561,51 @@ export default function AdminWhatsAppDashboard() {
                                         </p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras padrão</label>
-                                        <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
-                                            value={settings.rules_message}
+                                        <div className="flex justify-between items-center px-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão</label>
+                                            <div className="flex gap-1 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+                                                <button onClick={() => insertFormat('rules_message', '*')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Negrito">
+                                                    <Bold size={12} />
+                                                </button>
+                                                <button onClick={() => insertFormat('rules_message', '_')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Itálico">
+                                                    <Italic size={12} />
+                                                </button>
+                                                <div className="w-px h-3 bg-gray-100 mx-1" />
+                                                {["🛍️", "✨", "🎉", "🐥"].map(emoji => (
+                                                    <button key={emoji} onClick={() => insertFormat('rules_message', emoji)} className="p-1 hover:bg-gray-50 rounded-lg transition-all text-base">
+                                                        {emoji}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <textarea
+                                            id="rules_message"
+                                            className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={settings?.rules_message || ""}
                                             onChange={e => setSettings({ ...settings, rules_message: e.target.value })} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
-                                        <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
-                                            value={settings.final_message}
+                                        <div className="flex justify-between items-center px-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
+                                            <div className="flex gap-1 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+                                                <button onClick={() => insertFormat('final_message', '*')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Negrito">
+                                                    <Bold size={12} />
+                                                </button>
+                                                <button onClick={() => insertFormat('final_message', '_')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Itálico">
+                                                    <Italic size={12} />
+                                                </button>
+                                                <div className="w-px h-3 bg-gray-100 mx-1" />
+                                                {["📦", "✅", "🙌", "💙"].map(emoji => (
+                                                    <button key={emoji} onClick={() => insertFormat('final_message', emoji)} className="p-1 hover:bg-gray-50 rounded-lg transition-all text-base">
+                                                        {emoji}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <textarea
+                                            id="final_message"
+                                            className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={settings?.final_message || ""}
                                             onChange={e => setSettings({ ...settings, final_message: e.target.value })}
                                             placeholder={"Use {categoryName} para incluir o nome da categoria."} />
                                     </div>
@@ -558,7 +625,7 @@ export default function AdminWhatsAppDashboard() {
                                                         Link do Carrinho <span>(Minutos)</span>
                                                     </label>
                                                     <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                                        value={settings.cart_expiration_minutes || 60}
+                                                        value={settings?.cart_expiration_minutes || 60}
                                                         onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
                                                     <p className="text-[9px] text-gray-400 font-medium">Tempo que o cliente tem para revisar o carrinho e confirmar.</p>
                                                 </div>
