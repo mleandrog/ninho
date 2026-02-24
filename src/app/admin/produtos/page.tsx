@@ -61,20 +61,20 @@ export default function AdminProductsPage() {
         setCategories(data || []);
     };
 
-    const compressImage = (file: File): Promise<Blob> => {
+    const compressImage = (file: File, size?: string): Promise<Blob> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (event) => {
                 const img = new Image();
                 img.src = event.target?.result as string;
-                img.onload = () => {
+                img.onload = async () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
 
-                    // Redimensionar para no máximo 800px preservando proporção
-                    const max = 800;
+                    // Redimensionar para no máximo 1200px (um pouco mais para melhor qualidade no branding)
+                    const max = 1200;
                     if (width > height && width > max) {
                         height = (height * max) / width;
                         width = max;
@@ -86,12 +86,72 @@ export default function AdminProductsPage() {
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
+                    if (!ctx) return reject(new Error("Contexto não encontrado"));
+
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Adicionar Branding (Logo + Tamanho) se houver tamanho
+                    if (size) {
+                        try {
+                            const logo = new Image();
+                            logo.src = '/logo-ninho.png';
+                            await new Promise((res) => {
+                                logo.onload = res;
+                                logo.onerror = res;
+                            });
+
+                            if (logo.complete && logo.naturalWidth > 0) {
+                                // Configurações do Overlay
+                                const ovHeight = height * 0.18; // 18% da altura da imagem
+                                const ovWidth = ovHeight * 2.2;
+                                const x = 30;
+                                const y = height - ovHeight - 30;
+                                const radius = 25;
+
+                                // Desenhar Retângulo Branco Arredondado
+                                ctx.save();
+                                ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                                ctx.shadowBlur = 20;
+                                ctx.shadowOffsetX = 0;
+                                ctx.shadowOffsetY = 10;
+
+                                ctx.fillStyle = 'white';
+                                ctx.beginPath();
+                                ctx.moveTo(x + radius, y);
+                                ctx.lineTo(x + ovWidth - radius, y);
+                                ctx.quadraticCurveTo(x + ovWidth, y, x + ovWidth, y + radius);
+                                ctx.lineTo(x + ovWidth, y + ovHeight - radius);
+                                ctx.quadraticCurveTo(x + ovWidth, y + ovHeight, x + ovWidth - radius, y + ovHeight);
+                                ctx.lineTo(x + radius, y + ovHeight);
+                                ctx.quadraticCurveTo(x, y + ovHeight, x, y + ovHeight - radius);
+                                ctx.lineTo(x, y + radius);
+                                ctx.quadraticCurveTo(x, y, x + radius, y);
+                                ctx.closePath();
+                                ctx.fill();
+                                ctx.restore();
+
+                                // Desenhar a Logo (Sol)
+                                // Centralizar o sol verticalmente e colocar à esquerda
+                                const logoPadding = ovHeight * 0.15;
+                                const logoSize = ovHeight - (logoPadding * 2);
+                                ctx.drawImage(logo, x + logoPadding, y + logoPadding, logoSize, logoSize);
+
+                                // Desenhar o Texto do Tamanho
+                                ctx.fillStyle = '#C4A484'; // Tom marrom claro/médio conforme referência
+                                ctx.font = `900 ${ovHeight * 0.6}px system-ui, -apple-system, sans-serif`;
+                                ctx.textAlign = 'left';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(size, x + logoSize + (logoPadding * 2), y + (ovHeight / 2) + (ovHeight * 0.05));
+                            }
+                        } catch (err) {
+                            console.error("Erro ao processar branding:", err);
+                        }
+                    }
 
                     canvas.toBlob((blob) => {
                         if (blob) resolve(blob);
                         else reject(new Error("Erro na compressão"));
-                    }, 'image/jpeg', 0.8); // 80% qualidade
+                    }, 'image/jpeg', 0.9); // 90% qualidade
                 };
             };
             reader.onerror = (error) => reject(error);
@@ -106,8 +166,8 @@ export default function AdminProductsPage() {
         }
     };
 
-    const uploadImage = async (file: File): Promise<string> => {
-        const compressedBlob = await compressImage(file);
+    const uploadImage = async (file: File, size?: string): Promise<string> => {
+        const compressedBlob = await compressImage(file, size);
         const fileName = `${Date.now()}-${file.name}`;
         const filePath = `products/${fileName}`;
 
@@ -132,9 +192,10 @@ export default function AdminProductsPage() {
             let finalImageUrl = formData.image_url;
 
             if (selectedFile) {
-                const toastId = toast.loading("Enviando e comprimindo imagem...");
+                const toastId = toast.loading("Gerando branding e enviando imagem...");
                 try {
-                    finalImageUrl = await uploadImage(selectedFile);
+                    const sizeToUse = formData.size === 'Outros' ? customSize : formData.size;
+                    finalImageUrl = await uploadImage(selectedFile, sizeToUse);
                     toast.success("Imagem enviada!", { id: toastId });
                 } catch (err: any) {
                     toast.error("Erro no upload da imagem: " + err.message, { id: toastId });
@@ -438,8 +499,8 @@ export default function AdminProductsPage() {
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, size: s })}
                                                     className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${formData.size === s
-                                                            ? 'bg-primary text-white shadow-sm'
-                                                            : 'bg-soft text-gray-500 hover:bg-primary/10'
+                                                        ? 'bg-primary text-white shadow-sm'
+                                                        : 'bg-soft text-gray-500 hover:bg-primary/10'
                                                         }`}
                                                 >
                                                     {s}
