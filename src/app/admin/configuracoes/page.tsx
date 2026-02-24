@@ -116,13 +116,15 @@ export default function AdminSettingsPage() {
                     toast.success("Endereço preenchido!");
 
                     // Buscar coordenadas
-                    const coordsRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`);
+                    // Importante: Removendo o bairro da string para aumentar a taxa de sucesso do Nominatim OpenStreetMap
+                    const searchAddress = `${data.logradouro}, ${data.localidade} - ${data.uf}`;
+                    const coordsRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=1`);
                     const coordsData = await coordsRes.json();
                     if (coordsData && coordsData.length > 0) {
                         setSettings((prev: any) => ({
                             ...prev,
-                            store_lat: parseFloat(coordsData[0].lat),
-                            store_lng: parseFloat(coordsData[0].lon)
+                            store_lat: String(coordsData[0].lat),
+                            store_lng: String(coordsData[0].lon)
                         }));
                     }
                 }
