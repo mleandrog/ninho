@@ -56,11 +56,11 @@ export default function AdminOrdersPage() {
     const fetchBags = async () => {
         setLoading(true);
         try {
-            // Busca sacolas abertas (carrinhos que não viraram pedido ainda ou estão ativos)
+            // Busca sacolas (carrinhos que não viraram pedido ainda ou estão ativos)
             const { data, error } = await supabase
-                .from("whatsapp_shopping_sessions")
+                .from("bags")
                 .select("*, profiles:customer_id(full_name)")
-                .order("updated_at", { ascending: false });
+                .order("created_at", { ascending: false });
             if (error) throw error;
             setBags(data || []);
         } catch (err: any) {
@@ -94,7 +94,7 @@ export default function AdminOrdersPage() {
             const name = (item.profiles?.full_name || item.customer_name || "").toLowerCase();
             const num = activeTab === "pedidos"
                 ? (item.order_number || item.id.slice(0, 8)).toLowerCase()
-                : (item.wa_name || "").toLowerCase();
+                : (item.customer_phone || "").toLowerCase();
             const created = new Date(item.created_at);
 
             if (search && !name.includes(search.toLowerCase()) && !num.includes(search.toLowerCase())) return false;
@@ -272,11 +272,11 @@ export default function AdminOrdersPage() {
                                             <span className="font-black text-muted-text">
                                                 {activeTab === "pedidos"
                                                     ? `#${item.order_number || item.id.slice(0, 8).toUpperCase()}`
-                                                    : (item.wa_name || "Sem nome no WA")}
+                                                    : `#${item.id.slice(0, 8).toUpperCase()}`}
                                             </span>
                                             {activeTab === "sacolas" && (
                                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                    {item.wa_id?.split('@')[0] || "Sem número"}
+                                                    {item.customer_phone || "Sem número"}
                                                 </span>
                                             )}
                                         </div>
