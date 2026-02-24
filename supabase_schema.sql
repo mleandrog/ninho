@@ -21,12 +21,19 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_settings (
 -- 3. Campanhas de Disparo
 CREATE TABLE IF NOT EXISTS public.whatsapp_campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT, -- Nome da campanha
     category_id BIGINT REFERENCES public.categories(id),
     group_ids UUID[] NOT NULL, -- Array de IDs dos grupos selecionados
     interval_seconds INTEGER DEFAULT 30,
-    status TEXT DEFAULT 'pending', -- pending, running, completed, cancelled
+    status TEXT DEFAULT 'pending', -- pending, running, completed, stopped, scheduled
     products_sent INTEGER DEFAULT 0,
     total_products INTEGER DEFAULT 0,
+    scheduled_at TIMESTAMP WITH TIME ZONE,
+    initial_message TEXT,
+    initial_message_interval INTEGER DEFAULT 10,
+    rules_message TEXT,
+    rules_interval INTEGER DEFAULT 10,
+    final_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     started_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE

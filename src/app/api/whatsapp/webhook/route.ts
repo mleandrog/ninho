@@ -175,27 +175,51 @@ export async function POST(request: NextRequest) {
                                 }
                             }
 
-                            // 4. SMART DETECTION: Se não citou, pegar o ÚLTIMO produto enviado na campanha
-                            if (!productId && campaignData.products_sent > 0) {
-                                console.log(`[Lead Capture] Cliente não citou produto. Buscando último enviado na campanha ${campaignData.id}...`);
+                            // 4. SMART DETECTION: Se não citou, pegar o produto baseado no MOMENTO que a mensagem foi enviada
+                            if (!productId) {
+                                // Obter timestamp da mensagem do payload (Evolution v2 envia em segundos)
+                                const msgTimestamp = data.messageTimestamp || Math.floor(Date.now() / 1000);
+                                const msgTimeISO = new Date(msgTimestamp * 1000).toISOString();
 
-                                // Buscar os produtos da categoria da campanha
-                                const { data: categoryProducts } = await supabase
-                                    .from('products')
-                                    .select('id, name')
-                                    .eq('category_id', campaignData.category_id)
-                                    .eq('status', 'available')
-                                    .order('id', { ascending: true });
+                                console.log(`[Lead Capture] Cliente não citou produto. Buscando disparos para o grupo ${phone} antes de ${msgTimeISO}...`);
 
-                                if (categoryProducts && categoryProducts.length > 0) {
-                                    // O produto enviado por último é o de índice (products_sent - 1)
-                                    const lastProductIndex = Math.max(0, campaignData.products_sent - 1);
-                                    const detectedProduct = categoryProducts[lastProductIndex];
+                                // Buscar o último produto disparado NESTE grupo ANTES da mensagem do cliente
+                                const { data: dispatch, error: dispatchError } = await supabase
+                                    .from('whatsapp_campaign_dispatches')
+                                    .select('product_id, products(name)')
+                                    .eq('campaign_id', campaignData.id)
+                                    .eq('group_jid', phone)
+                                    .lte('sent_at', msgTimeISO)
+                                    .order('sent_at', { ascending: false })
+                                    .limit(1)
+                                    .maybeSingle();
 
-                                    if (detectedProduct) {
-                                        productId = Number(detectedProduct.id);
-                                        productName = detectedProduct.name;
-                                        console.log(`[Lead Capture] Produto detectado via heurística de campanha: ${productName}`);
+                                if (dispatchError) {
+                                    console.error('[Lead Capture] Erro ao buscar disparo:', dispatchError);
+                                }
+
+                                if (dispatch) {
+                                    productId = Number(dispatch.product_id);
+                                    productName = (dispatch.products as any)?.name || "Produto Detectado";
+                                    console.log(`[Lead Capture] Produto detectado via timestamp (${msgTimeISO}): ${productName}`);
+                                } else {
+                                    console.warn(`[Lead Capture] Nenhum disparo encontrado para o grupo ${phone} antes de ${msgTimeISO}.`);
+
+                                    // Fallback para o último global se não achar nada no grupo (segurança)
+                                    if (campaignData.products_sent > 0) {
+                                        const { data: categoryProducts } = await supabase
+                                            .from('products')
+                                            .select('id, name')
+                                            .eq('category_id', campaignData.category_id)
+                                            .eq('status', 'available')
+                                            .order('id', { ascending: true });
+
+                                        if (categoryProducts && categoryProducts.length > 0) {
+                                            const lastProductIndex = Math.max(0, campaignData.products_sent - 1);
+                                            productId = Number(categoryProducts[lastProductIndex].id);
+                                            productName = categoryProducts[lastProductIndex].name;
+                                            console.log(`[Lead Capture] Fallback para último enviado: ${productName}`);
+                                        }
                                     }
                                 }
                             }

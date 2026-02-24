@@ -80,9 +80,25 @@ pm2 save
 
 ---
 
-## 📋 Dicas Rápidas
+- [x] Atualizar Guia de Deploy com correções de cache e Cron
 
-- **Logs:** `pm2 logs ninho-lar`
-- **Status:** `pm2 list`
-- **Cache do Nginx:** `openresty -s reload` ou `nginx -s reload`
-- **Limpeza:** Apague `.zip` antigos periodicamente
+---
+
+## ⏰ Configuração do Cron Job (Automação de Campanhas)
+
+Para que as campanhas agendadas funcionem no servidor (VPS), você precisa configurar um cron job no sistema para chamar a API de minuto em minuto.
+
+1. **Abra o editor de cron:**
+```bash
+crontab -e
+```
+
+2. **Adicione esta linha ao final do arquivo (ajuste o caminho se necessário):**
+```bash
+* * * * * curl -X GET "https://ninhoelar.com.br/api/whatsapp/campaign/cron" -H "Authorization: Bearer ninho-cron-secret-2026" >> /var/log/ninho-cron.log 2>&1
+```
+
+3. **Verifique se está rodando:**
+```bash
+tail -f /var/log/ninho-cron.log
+```

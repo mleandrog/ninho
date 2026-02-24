@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { evolutionService } from "@/services/evolution";
+import { consolidateCartForCampaign } from "@/services/consolidateCart";
 
 export async function POST(req: Request) {
     try {
@@ -98,6 +99,15 @@ export async function POST(req: Request) {
                             } else {
                                 await evolutionService.sendMessage(group.group_jid, msg);
                             }
+
+                            // REGISTRAR DISPARO PARA MAPEAMENTO PRECISO NO WEBHOOK
+                            await supabase.from("whatsapp_campaign_dispatches").insert({
+                                campaign_id: campaignId,
+                                product_id: product.id,
+                                group_jid: group.group_jid,
+                                sent_at: new Date().toISOString()
+                            });
+
                         } catch (err) {
                             console.error(`[Campaign ${campaignId}] Erro ao enviar para ${group.name}:`, err);
                         }
@@ -127,7 +137,10 @@ export async function POST(req: Request) {
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("id", campaignId);
 
-                console.log(`[Campaign ${campaignId}] Campanha concluída com sucesso.`);
+                console.log(`[Campaign ${campaignId}] Campanha concluída com sucesso. Consolidando carrinhos...`);
+
+                // ENVIAR LINKS INDIVIDUAIS PARA TODOS OS PARTICIPANTES
+                await consolidateCartForCampaign(campaignId);
 
             } catch (err) {
                 console.error(`[Campaign ${campaignId}] Erro fatal:`, err);
