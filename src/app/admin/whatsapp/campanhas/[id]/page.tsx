@@ -440,9 +440,7 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
                         </div>
                     </div>
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     );
 }
-
-import { Loader2 } from "lucide-react";
