@@ -20,7 +20,9 @@ export default function CampaignCartPage({
     const [orderNumber, setOrderNumber] = useState('');
 
     const [deliveryType, setDeliveryType] = useState<'delivery' | 'sacola'>('sacola');
+    const [paymentMethod, setPaymentMethod] = useState<'pix' | 'link'>('pix');
     const [address, setAddress] = useState({ street: '', number: '', neighborhood: '', city: '', complement: '' });
+    const [paymentResult, setPaymentResult] = useState<any>(null);
 
     useEffect(() => {
         fetchCartItems();
@@ -63,7 +65,10 @@ export default function CampaignCartPage({
         try {
             const res = await fetch('/api/checkout/campanha/confirm', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-payment-method': paymentMethod
+                },
                 body: JSON.stringify({
                     campaignId,
                     phone,
@@ -77,6 +82,7 @@ export default function CampaignCartPage({
             if (!res.ok) throw new Error(data.error || 'Erro ao confirmar pedido.');
 
             setOrderNumber(data.orderNumber);
+            setPaymentResult(data.payment);
             setConfirmed(true);
             toast.success('Pedido confirmado!');
         } catch (err: any) {
@@ -102,11 +108,45 @@ export default function CampaignCartPage({
                         <CheckCircle2 className="w-10 h-10 text-green-500" />
                     </div>
                     <h1 className="text-3xl font-black text-gray-800 mb-2">Pedido Confirmado!</h1>
-                    <p className="text-gray-500 font-bold mb-4">
+                    <p className="text-gray-500 font-bold mb-6">
                         Pedido <span className="text-primary">#{orderNumber}</span> recebido com sucesso.
                     </p>
+
+                    {paymentResult?.type === 'pix' && paymentResult.qrCode && (
+                        <div className="bg-soft p-6 rounded-3xl mb-6">
+                            <p className="text-xs font-black uppercase text-gray-400 mb-4 tracking-widest">Pague com PIX</p>
+                            <img
+                                src={`data:image/png;base64,${paymentResult.qrCode}`}
+                                alt="QR Code Pix"
+                                className="w-48 h-48 mx-auto mb-4 rounded-xl shadow-sm"
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(paymentResult.qrCodePayload);
+                                    toast.success('Código PIX copiado!');
+                                }}
+                                className="w-full py-3 bg-white text-primary font-black text-xs uppercase rounded-xl border-2 border-primary/20 hover:bg-primary/5 transition-all"
+                            >
+                                Copiar Código PIX
+                            </button>
+                        </div>
+                    )}
+
+                    {paymentResult?.invoiceUrl && (
+                        <div className="mb-8">
+                            <a
+                                href={paymentResult.invoiceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-primary font-black hover:underline"
+                            >
+                                Abrir Link de Pagamento <Eye size={16} />
+                            </a>
+                        </div>
+                    )}
+
                     <p className="text-gray-400 text-sm leading-relaxed">
-                        Em breve entraremos em contato pelo WhatsApp para combinar os detalhes da sua {deliveryType === 'delivery' ? 'entrega' : 'sacola'}. 💛
+                        Enviamos os detalhes e o link de pagamento também para o seu WhatsApp. 💛
                     </p>
                 </div>
             </div>
@@ -236,6 +276,29 @@ export default function CampaignCartPage({
                                 />
                             </div>
                         )}
+
+                        {/* Método de Pagamento */}
+                        <div className="bg-white rounded-3xl p-6 mb-6 shadow-sm">
+                            <h2 className="font-black text-gray-800 mb-4 text-sm uppercase tracking-widest">Como deseja pagar?</h2>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setPaymentMethod('pix')}
+                                    className={`p-4 rounded-2xl border-2 text-center transition-all ${paymentMethod === 'pix' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
+                                >
+                                    <div className={`w-8 h-8 mx-auto mb-2 flex items-center justify-center rounded-lg font-black text-[10px] ${paymentMethod === 'pix' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>PIX</div>
+                                    <p className={`text-sm font-black ${paymentMethod === 'pix' ? 'text-primary' : 'text-gray-500'}`}>PIX</p>
+                                    <p className="text-[10px] text-gray-400 font-bold mt-1">Liberação imediata</p>
+                                </button>
+                                <button
+                                    onClick={() => setPaymentMethod('link')}
+                                    className={`p-4 rounded-2xl border-2 text-center transition-all ${paymentMethod === 'link' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
+                                >
+                                    <ShoppingBag className={`mx-auto mb-2 ${paymentMethod === 'link' ? 'text-primary' : 'text-gray-400'}`} size={24} />
+                                    <p className={`text-sm font-black ${paymentMethod === 'link' ? 'text-primary' : 'text-gray-500'}`}>Outros</p>
+                                    <p className="text-[10px] text-gray-400 font-bold mt-1">Cartão ou Boleto</p>
+                                </button>
+                            </div>
+                        </div>
 
                         {/* Botão Confirmar */}
                         <button

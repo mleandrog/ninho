@@ -80,19 +80,79 @@ export async function POST(req: Request) {
             .update({ status: 'completed' })
             .in('id', selectedItemIds);
 
+        // --- INTEGRAÇÃO ASAAS ---
+        let paymentData: any = {};
+        try {
+            const { asaasService } = await import('@/services/asaas');
+
+            // Criar ou encontrar cliente no ASAAS
+            const asaasCustomerId = await asaasService.findOrCreateCustomer({
+                name: items[0].customer_name || 'Cliente Ninho Lar',
+                phone: phone,
+            });
+
+            const dueDate = new Date(Date.now() + 60 * 60 * 1000).toISOString().split('T')[0]; // 1 hora de validade
+            const description = `Pedido #${orderNumber} - Campanha Ninho Lar`;
+
+            if (req.headers.get('x-payment-method') === 'pix') {
+                const pix = await asaasService.createPixPayment({
+                    customerId: asaasCustomerId,
+                    value: totalAmount,
+                    description,
+                    expirationDate: dueDate,
+                    externalReference: order.id
+                });
+                paymentData = { type: 'pix', ...pix };
+            } else {
+                const link = await asaasService.createPaymentLink({
+                    customerId: asaasCustomerId,
+                    value: totalAmount,
+                    description,
+                    expirationDate: dueDate,
+                    externalReference: order.id
+                });
+                paymentData = { type: 'link', ...link };
+            }
+
+            // Atualizar o pedido com o ID da cobrança do Asaas se necessário
+            if (paymentData.chargeId) {
+                await supabase
+                    .from('orders')
+                    .update({
+                        payment_method: paymentData.type,
+                        payment_status: 'pending'
+                        // Aqui você poderia salvar o chargeId em uma coluna específica se houver
+                    })
+                    .eq('id', order.id);
+            }
+        } catch (asaasError) {
+            console.error('[CampaignConfirm] Erro Asaas:', asaasError);
+            // Não trava o fluxo, mas logamos o erro
+        }
+
         // 8. Enviar DM de confirmação
         const firstName = items[0].customer_name?.split(' ')[0] || 'Cliente';
         const phoneRaw = items[0].customer_phone_raw || phone;
-        const confirmMsg =
-            `✅ Pedido *#${orderNumber}* confirmado com sucesso!\n\n` +
-            `Obrigado, ${firstName}! Em breve nossa equipe entrará em contato para combinar os detalhes da ${deliveryType === 'delivery' ? 'entrega' : 'sua sacola'}. 💛\n\n` +
-            `Qualquer dúvida, é só chamar aqui mesmo no WhatsApp.`;
+
+        let confirmMsg = `✅ Pedido *#${orderNumber}* confirmado com sucesso!\n\n` +
+            `Obrigado, ${firstName}! Em breve nossa equipe entrará em contato para combinar os detalhes da ${deliveryType === 'delivery' ? 'entrega' : 'sua sacola'}. 💛\n\n`;
+
+        if (paymentData.invoiceUrl) {
+            confirmMsg += `Para realizar o pagamento, você pode acessar este link:\n🔗 ${paymentData.invoiceUrl}\n\n`;
+        }
+
+        confirmMsg += `Qualquer dúvida, é só chamar aqui mesmo no WhatsApp.`;
 
         await evolutionService.sendMessage(phoneRaw, confirmMsg);
 
-        console.log(`[CampaignConfirm] Pedido ${orderNumber} criado com ${items.length} item(ns). Produtos ${productIds.join(',')} marcados como indisponíveis.`);
+        console.log(`[CampaignConfirm] Pedido ${orderNumber} criado. Asaas: ${paymentData.type || 'N/A'}`);
 
-        return NextResponse.json({ success: true, orderNumber, orderId: order.id });
+        return NextResponse.json({
+            success: true,
+            orderNumber,
+            orderId: order.id,
+            payment: paymentData
+        });
 
     } catch (error: any) {
         console.error('[CampaignConfirm] Erro:', error);
