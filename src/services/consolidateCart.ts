@@ -2,7 +2,6 @@ import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { evolutionService } from './evolution';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const CART_EXPIRATION_MINUTES = 60;
 
 /**
  * Consolida os carrinhos de todos os clientes ao finalizar uma campanha.
@@ -11,7 +10,16 @@ const CART_EXPIRATION_MINUTES = 60;
 export async function consolidateCartForCampaign(campaignId: string | number) {
     console.log(`[ConsolidateCart] Iniciando consolidação para campanha ${campaignId}...`);
     try {
-        // 1. Buscar todos os itens 'waiting' desta campanha com detalhes do produto
+        // 1. Buscar configurações do WhatsApp
+        const { data: settings } = await supabase
+            .from('whatsapp_settings')
+            .select('*')
+            .limit(1)
+            .single();
+
+        const CART_EXPIRATION_MINUTES = settings?.cart_expiration_minutes || 60;
+
+        // 2. Buscar itens da fila para esta campanha
         const { data: items, error } = await supabase
             .from('priority_queue')
             .select('*, products(id, name, price)')

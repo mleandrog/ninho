@@ -2,8 +2,9 @@
 
 import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingBag, Truck, X, CheckCircle2, Package, Loader2, Eye } from "lucide-react";
+import { ShoppingBag, Truck, X, CheckCircle2, Package, Loader2, Eye, MapPin, Calculator } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { deliveryService } from "@/services/delivery";
 
 export default function CampaignCartPage({
     params
@@ -23,10 +24,19 @@ export default function CampaignCartPage({
     const [paymentMethod, setPaymentMethod] = useState<'pix' | 'link'>('pix');
     const [address, setAddress] = useState({ street: '', number: '', neighborhood: '', city: '', complement: '' });
     const [paymentResult, setPaymentResult] = useState<any>(null);
+    const [settings, setSettings] = useState<any>(null);
+    const [shippingFee, setShippingFee] = useState(0);
+    const [calculating, setCalculating] = useState(false);
 
     useEffect(() => {
         fetchCartItems();
+        fetchSettings();
     }, []);
+
+    const fetchSettings = async () => {
+        const { data } = await supabase.from('whatsapp_settings').select('*').limit(1).single();
+        if (data) setSettings(data);
+    };
 
     const fetchCartItems = async () => {
         const { data, error } = await supabase
@@ -50,6 +60,28 @@ export default function CampaignCartPage({
     };
 
     const totalAmount = items.reduce((acc, item) => acc + Number(item.products?.price || 0), 0);
+    const finalTotal = totalAmount + (deliveryType === 'delivery' ? shippingFee : 0);
+
+    const handleCalculateShipping = async () => {
+        const fullAddress = `${address.street}, ${address.number}, ${address.neighborhood}, ${address.city}`;
+        if (!address.street || !address.city) return toast.error("Preencha ao menos Rua e Cidade.");
+
+        setCalculating(true);
+        try {
+            const coords = await deliveryService.getCoordsFromAddress(fullAddress);
+            if (coords) {
+                const fee = await deliveryService.calculateFee(coords.lat, coords.lng);
+                setShippingFee(fee);
+                toast.success(`Frete calculado: R$ ${fee.toFixed(2)}`);
+            } else {
+                toast.error("Endereço não encontrado nas coordenadas.");
+            }
+        } catch (error) {
+            toast.error("Erro ao calcular frete.");
+        } finally {
+            setCalculating(false);
+        }
+    };
 
     const handleConfirm = async () => {
         if (items.length === 0) {
@@ -75,6 +107,7 @@ export default function CampaignCartPage({
                     selectedItemIds: items.map(i => i.id),
                     deliveryType,
                     address: deliveryType === 'delivery' ? address : null,
+                    shippingFee: deliveryType === 'delivery' ? shippingFee : 0,
                 }),
             });
 
@@ -85,6 +118,13 @@ export default function CampaignCartPage({
             setPaymentResult(data.payment);
             setConfirmed(true);
             toast.success('Pedido confirmado!');
+
+            // REDIRECIONAMENTO AUTOMÁTICO se for Link de Pagamento
+            if (paymentMethod === 'link' && data.payment?.invoiceUrl) {
+                setTimeout(() => {
+                    window.location.href = data.payment.invoiceUrl;
+                }, 1500); // Pequeno delay para o usuário ver o sucesso
+            }
         } catch (err: any) {
             toast.error(err.message);
         } finally {
@@ -203,11 +243,23 @@ export default function CampaignCartPage({
                 {/* Total */}
                 {items.length > 0 && (
                     <>
-                        <div className="bg-primary/5 rounded-3xl p-5 mb-6 flex justify-between items-center border border-primary/10">
-                            <span className="font-black text-gray-600 uppercase text-sm tracking-widest">Total</span>
-                            <span className="text-2xl font-black text-primary">
-                                R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
+                        <div className="bg-primary/5 rounded-3xl p-5 mb-6 space-y-2 border border-primary/10">
+                            <div className="flex justify-between items-center text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                                <span>Subtotal</span>
+                                <span>R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            {deliveryType === 'delivery' && (
+                                <div className="flex justify-between items-center text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                                    <span>Frete</span>
+                                    <span>R$ {shippingFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center pt-2 mt-2 border-t border-primary/10">
+                                <span className="font-black text-gray-600 uppercase text-sm tracking-widest">Total</span>
+                                <span className="text-2xl font-black text-primary">
+                                    R$ {finalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
                         </div>
 
                         {/* Tipo de entrega */}
@@ -281,22 +333,26 @@ export default function CampaignCartPage({
                         <div className="bg-white rounded-3xl p-6 mb-6 shadow-sm">
                             <h2 className="font-black text-gray-800 mb-4 text-sm uppercase tracking-widest">Como deseja pagar?</h2>
                             <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => setPaymentMethod('pix')}
-                                    className={`p-4 rounded-2xl border-2 text-center transition-all ${paymentMethod === 'pix' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
-                                >
-                                    <div className={`w-8 h-8 mx-auto mb-2 flex items-center justify-center rounded-lg font-black text-[10px] ${paymentMethod === 'pix' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>PIX</div>
-                                    <p className={`text-sm font-black ${paymentMethod === 'pix' ? 'text-primary' : 'text-gray-500'}`}>PIX</p>
-                                    <p className="text-[10px] text-gray-400 font-bold mt-1">Liberação imediata</p>
-                                </button>
-                                <button
-                                    onClick={() => setPaymentMethod('link')}
-                                    className={`p-4 rounded-2xl border-2 text-center transition-all ${paymentMethod === 'link' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
-                                >
-                                    <ShoppingBag className={`mx-auto mb-2 ${paymentMethod === 'link' ? 'text-primary' : 'text-gray-400'}`} size={24} />
-                                    <p className={`text-sm font-black ${paymentMethod === 'link' ? 'text-primary' : 'text-gray-500'}`}>Outros</p>
-                                    <p className="text-[10px] text-gray-400 font-bold mt-1">Cartão ou Boleto</p>
-                                </button>
+                                {settings?.asaas_pix_enabled !== false && (
+                                    <button
+                                        onClick={() => setPaymentMethod('pix')}
+                                        className={`p-4 rounded-2xl border-2 text-center transition-all ${paymentMethod === 'pix' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
+                                    >
+                                        <div className={`w-8 h-8 mx-auto mb-2 flex items-center justify-center rounded-lg font-black text-[10px] ${paymentMethod === 'pix' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>PIX</div>
+                                        <p className={`text-sm font-black ${paymentMethod === 'pix' ? 'text-primary' : 'text-gray-500'}`}>PIX</p>
+                                        <p className="text-[10px] text-gray-400 font-bold mt-1">Liberação imediata</p>
+                                    </button>
+                                )}
+                                {settings?.asaas_card_enabled !== false && (
+                                    <button
+                                        onClick={() => setPaymentMethod('link')}
+                                        className={`p-4 rounded-2xl border-2 text-center transition-all ${paymentMethod === 'link' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
+                                    >
+                                        <ShoppingBag className={`mx-auto mb-2 ${paymentMethod === 'link' ? 'text-primary' : 'text-gray-400'}`} size={24} />
+                                        <p className={`text-sm font-black ${paymentMethod === 'link' ? 'text-primary' : 'text-gray-500'}`}>Outros</p>
+                                        <p className="text-[10px] text-gray-400 font-bold mt-1">Cartão ou Boleto</p>
+                                    </button>
+                                )}
                             </div>
                         </div>
 

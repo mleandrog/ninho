@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabase";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Play, CheckCircle2, AlertCircle, Clock, Package, Users } from "lucide-react";
+import { ArrowLeft, Play, CheckCircle2, AlertCircle, Clock, Package, Users, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
@@ -405,36 +405,44 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
                                 </div>
                             </div>
 
-                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                                 {leads.length === 0 ? (
                                     <p className="text-sm font-bold text-gray-500 leading-relaxed text-center py-4">
-                                        Nenhum interessado capturado ainda. Usuários que responderem às mensagens com palavras-chave aparecerão aqui.
+                                        Nenhum interessado capturado ainda.
                                     </p>
                                 ) : (
-                                    leads.map(lead => (
-                                        <div key={lead.id} className="bg-white p-4 rounded-2xl shadow-sm border border-soft">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-black text-sm text-muted-text truncate pr-2">{lead.contact_name}</h4>
-                                                <span className="text-[10px] font-black text-gray-400 shrink-0">
-                                                    {new Date(lead.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
+                                    <div className="flex flex-col gap-2">
+                                        {leads.map(lead => (
+                                            <div key={lead.id} className="bg-white p-3 rounded-xl shadow-sm border border-soft flex items-center justify-between gap-4 group hover:border-primary/30 transition-all">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0 font-black text-[10px]">
+                                                        {lead.contact_name?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h4 className="font-black text-xs text-muted-text truncate">{lead.contact_name}</h4>
+                                                        <p className="text-[10px] font-bold text-primary truncate">
+                                                            {lead.product_name || 'Direta'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-4 shrink-0">
+                                                    <span className="text-[10px] font-black text-gray-400 bg-soft px-2 py-1 rounded-md">
+                                                        {new Date(lead.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                    <a
+                                                        href={`https://wa.me/${lead.phone}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="w-8 h-8 flex items-center justify-center bg-green-100 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                                                        title="Chamar no WhatsApp"
+                                                    >
+                                                        <Smartphone size={14} />
+                                                    </a>
+                                                </div>
                                             </div>
-                                            <p className="text-xs font-bold text-primary mb-1 truncate">
-                                                Produto: {lead.product_name || 'Referência Direta'}
-                                            </p>
-                                            <p className="text-xs font-medium text-gray-500 italic bg-soft p-2 rounded-lg">
-                                                "{lead.message_text}"
-                                            </p>
-                                            <a
-                                                href={`https://wa.me/${lead.phone}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="mt-3 flex justify-center bg-green-100 text-green-700 hover:bg-green-200 text-xs font-black uppercase py-2 rounded-xl transition-colors"
-                                            >
-                                                Chamar no WhatsApp
-                                            </a>
-                                        </div>
-                                    ))
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>

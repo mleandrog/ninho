@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import {
     Send, Settings as SettingsIcon, Users, Plus, Trash2, QrCode,
     LogOut, Loader2, Smartphone, X, Calendar, Clock, CheckCircle2,
-    AlertCircle, Zap, ChevronRight, Play, Square
+    AlertCircle, Zap, ChevronRight, Play, Square, ShoppingBag, MapPin
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { evolutionService } from "@/services/evolution";
@@ -52,11 +52,13 @@ const STATUS_CONFIG: Record<CampaignStatus, { label: string; color: string; dot:
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminWhatsAppDashboard() {
-    const [activeTab, setActiveTab] = useState<"campaigns" | "groups" | "connection">("campaigns");
+    const [activeTab, setActiveTab] = useState<"campaigns" | "groups" | "connection" | "bags">("campaigns");
     const [categories, setCategories] = useState<any[]>([]);
     const [groups, setGroups] = useState<any[]>([]);
     const [settings, setSettings] = useState<any>(null);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const [bags, setBags] = useState<any[]>([]);
+    const [serverTime, setServerTime] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
 
@@ -92,7 +94,20 @@ export default function AdminWhatsAppDashboard() {
     const [fetchingGroups, setFetchingGroups] = useState(false);
     const [showGroupSelector, setShowGroupSelector] = useState(false);
 
-    useEffect(() => { fetchInitialData(); }, []);
+    useEffect(() => {
+        fetchInitialData();
+        fetchServerTime();
+        const timeInterval = setInterval(fetchServerTime, 60000); // Atualiza hora a cada minuto
+        return () => clearInterval(timeInterval);
+    }, []);
+
+    const fetchServerTime = async () => {
+        try {
+            const res = await fetch('/api/utils/time');
+            const data = await res.json();
+            setServerTime(data.serverTime);
+        } catch (e) { console.error("Erro ao buscar hora do servidor", e); }
+    };
 
     useEffect(() => {
         let intervalId: any;
@@ -114,10 +129,19 @@ export default function AdminWhatsAppDashboard() {
     }, [activeTab]);
 
     // ─── Data fetching ────────────────────────────────────────────────────────
+    useEffect(() => {
+        let interval: any;
+        if (activeTab === "campaigns") {
+            interval = setInterval(fetchInitialData, 5000); // Polling cada 5s
+        }
+        return () => { if (interval) clearInterval(interval); };
+    }, [activeTab]);
+
+    // ─── Data fetching ────────────────────────────────────────────────────────
     const fetchInitialData = async () => {
-        setLoading(true);
+        // Removemos o setLoading(true) do polling para não ficar piscando
         try {
-            const [catRes, grpRes, setRes, campRes] = await Promise.all([
+            const [catRes, grpRes, setRes, campRes, bagRes] = await Promise.all([
                 supabase.from("categories").select("*"),
                 supabase.from("whatsapp_groups").select("*").order("created_at", { ascending: false }),
                 supabase.from("whatsapp_settings").select("*").limit(1).single(),
@@ -125,11 +149,34 @@ export default function AdminWhatsAppDashboard() {
                     .from("whatsapp_campaigns")
                     .select("*, categories:category_id(name)")
                     .order("created_at", { ascending: false }),
+                supabase
+                    .from("priority_queue")
+                    .select("*, products(name, price, image_url)")
+                    .in("status", ["waiting", "notified"])
+                    .order("created_at", { ascending: false }),
             ]);
             setCategories(catRes.data || []);
             setGroups(grpRes.data || []);
             setSettings(setRes.data);
             setCampaigns((campRes.data as Campaign[]) || []);
+
+            // Agrupar sacolas por cliente
+            if (bagRes.data) {
+                const grouped = bagRes.data.reduce((acc: any, item: any) => {
+                    const phone = item.customer_phone;
+                    if (!acc[phone]) acc[phone] = {
+                        phone,
+                        name: item.customer_name,
+                        items: [],
+                        total: 0,
+                        last_update: item.created_at
+                    };
+                    acc[phone].items.push(item);
+                    acc[phone].total += Number(item.products?.price || 0);
+                    return acc;
+                }, {});
+                setBags(Object.values(grouped));
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -254,6 +301,13 @@ export default function AdminWhatsAppDashboard() {
                     rules_message: settings.rules_message,
                     final_message: settings.final_message,
                     default_interval_seconds: settings.default_interval_seconds,
+                    cart_expiration_minutes: settings.cart_expiration_minutes,
+                    payment_expiration_minutes: settings.payment_expiration_minutes,
+                    asaas_pix_enabled: settings.asaas_pix_enabled,
+                    asaas_card_enabled: settings.asaas_card_enabled,
+                    store_lat: settings.store_lat,
+                    store_lng: settings.store_lng,
+                    store_address: settings.store_address,
                 })
                 .eq("id", settings.id);
             if (error) throw error;
@@ -360,12 +414,23 @@ export default function AdminWhatsAppDashboard() {
 
             <main className="flex-1 p-12 overflow-y-auto">
                 {/* Header */}
-                <header className="flex justify-between items-center mb-12">
+                <header className="flex justify-between items-center mb-10">
                     <div>
-                        <h1 className="text-4xl font-black text-muted-text lowercase tracking-tighter">
-                            Campanhas
+                        <h1 className="text-4xl font-black text-muted-text tracking-tighter lowercase flex items-center gap-3">
+                            <Zap className="text-primary" size={32} />
+                            WhatsApp
                         </h1>
-                        <p className="text-gray-400 font-bold mt-1">Gestão de campanhas, grupos e disparos automáticos</p>
+                        <div className="flex items-center gap-4 mt-1">
+                            <p className="text-gray-400 font-bold">Gerenciamento de campanhas e grupos</p>
+                            {serverTime && (
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-soft shadow-sm">
+                                    <Clock size={12} className="text-primary" />
+                                    <span className="text-[10px] font-black text-muted-text uppercase tracking-widest">
+                                        Server: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <Button
                         variant="outline"
@@ -379,56 +444,247 @@ export default function AdminWhatsAppDashboard() {
                 {/* Settings Panel */}
                 {showSettings && settings && (
                     <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white mb-12 space-y-6">
-                        <h2 className="text-2xl font-black text-muted-text">Configurações Globais</h2>
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Palavra-chave</label>
-                                <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                    value={settings.keyword}
-                                    onChange={e => setSettings({ ...settings, keyword: e.target.value.toUpperCase() })} />
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-black text-muted-text">Configurações Globais</h2>
+                            <div className="flex bg-soft p-1.5 rounded-2xl gap-1">
+                                <button
+                                    onClick={() => (window as any)._settingsTab = 'general'}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${(window as any)._settingsTab !== 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
+                                >
+                                    Geral
+                                </button>
+                                <button
+                                    onClick={() => (window as any)._settingsTab = 'payments'}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${(window as any)._settingsTab === 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
+                                >
+                                    Pagamentos
+                                </button>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Intervalo Padrão (segundos)</label>
-                                <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                    value={settings.default_interval_seconds}
-                                    onChange={e => setSettings({ ...settings, default_interval_seconds: parseInt(e.target.value) })} />
+                        </div>
+
+                        {/* Script para alternar abas sem re-renderizar todo o dashboard (hack amigável para este arquivo grande) */}
+                        <style>{`
+                            .settings-content-payments { display: none; }
+                            [data-tab="payments"] .settings-content-general { display: none; }
+                            [data-tab="payments"] .settings-content-payments { display: block; }
+                        `}</style>
+
+                        <div id="settings-container" data-tab={(window as any)._settingsTab || 'general'}>
+                            {/* ABA GERAL */}
+                            <div className="settings-content-general space-y-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Palavra-chave</label>
+                                        <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                            value={settings.keyword}
+                                            onChange={e => setSettings({ ...settings, keyword: e.target.value.toUpperCase() })} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-l-2 border-primary pl-2">Intervalo Padrão (segundos)</label>
+                                        <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                            value={settings.default_interval_seconds}
+                                            onChange={e => setSettings({ ...settings, default_interval_seconds: parseInt(e.target.value) })} />
+                                    </div>
+                                </div>
+
+                                {/* LOGÍSTICA */}
+                                <div className="p-6 bg-soft/50 rounded-[2rem] border border-white space-y-4">
+                                    <h3 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                        <MapPin size={14} /> Logística da Loja
+                                    </h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Endereço de Origem</label>
+                                            <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                value={settings.store_address || ""}
+                                                onChange={e => setSettings({ ...settings, store_address: e.target.value })}
+                                                placeholder="Rua Exemplo, 123, Cidade - UF" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Latitude</label>
+                                                <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                    value={settings.store_lat || ""}
+                                                    onChange={e => setSettings({ ...settings, store_lat: parseFloat(e.target.value) })} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Longitude</label>
+                                                <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                    value={settings.store_lng || ""}
+                                                    onChange={e => setSettings({ ...settings, store_lng: parseFloat(e.target.value) })} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-[9px] text-gray-400 font-bold italic">
+                                        * Essas coordenadas são usadas como ponto de partida para calcular a distância e o preço do frete.
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras padrão</label>
+                                    <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings.rules_message}
+                                        onChange={e => setSettings({ ...settings, rules_message: e.target.value })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
+                                    <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings.final_message}
+                                        onChange={e => setSettings({ ...settings, final_message: e.target.value })}
+                                        placeholder="Use {categoryName} para incluir o nome da categoria." />
+                                </div>
+                            </div>
+
+                            {/* ABA PAGAMENTOS */}
+                            <div className="settings-content-payments space-y-8">
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    {/* Prazos */}
+                                    <div className="space-y-6">
+                                        <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-primary pl-3">Prazos de Expiração</h3>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
+                                                    Link do Carrinho <span>(Minutos)</span>
+                                                </label>
+                                                <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                    value={settings.cart_expiration_minutes || 60}
+                                                    onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
+                                                <p className="text-[9px] text-gray-400 font-medium">Tempo que o cliente tem para revisar o carrinho e confirmar.</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
+                                                    Link de Pagamento <span>(Minutos)</span>
+                                                </label>
+                                                <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                    value={settings.payment_expiration_minutes || 60}
+                                                    onChange={e => setSettings({ ...settings, payment_expiration_minutes: parseInt(e.target.value) })} />
+                                                <p className="text-[9px] text-gray-400 font-medium">Validade do QR Code PIX ou Link de Cartão gerado no Asaas.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Métodos de Pagamento */}
+                                    <div className="space-y-6">
+                                        <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-green-400 pl-3">Métodos Habilitados</h3>
+                                        <div className="space-y-3">
+                                            <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-green-500 shadow-sm">
+                                                        <Zap size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-muted-text text-sm">PIX (Asaas)</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Liberação Imediata</p>
+                                                    </div>
+                                                </div>
+                                                <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
+                                                    checked={settings.asaas_pix_enabled !== false}
+                                                    onChange={e => setSettings({ ...settings, asaas_pix_enabled: e.target.checked })} />
+                                            </label>
+
+                                            <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
+                                                        <Smartphone size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-muted-text text-sm">Cartão / Boleto / Outros</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Checkout Externo Asaas</p>
+                                                    </div>
+                                                </div>
+                                                <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
+                                                    checked={settings.asaas_card_enabled !== false}
+                                                    onChange={e => setSettings({ ...settings, asaas_card_enabled: e.target.checked })} />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras padrão</label>
-                            <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28"
-                                value={settings.rules_message}
-                                onChange={e => setSettings({ ...settings, rules_message: e.target.value })} />
+
+                        <div className="flex gap-4 pt-4 border-t border-soft">
+                            <Button variant="outline" onClick={() => setShowSettings(false)} className="flex-1 h-14 rounded-full font-black uppercase text-xs tracking-widest">Cancelar</Button>
+                            <Button onClick={updateSettings} className="flex-[2] h-14 rounded-full shadow-vibrant font-black uppercase text-xs tracking-widest">Salvar Alterações</Button>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
-                            <textarea className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28"
-                                value={settings.final_message}
-                                onChange={e => setSettings({ ...settings, final_message: e.target.value })}
-                                placeholder="Use {categoryName} para incluir o nome da categoria." />
-                        </div>
-                        <Button onClick={updateSettings} className="w-full h-14 rounded-full shadow-vibrant">Salvar Configurações</Button>
                     </div>
                 )}
 
                 {/* Tabs */}
                 <div className="flex gap-4 mb-8">
-                    {[
-                        { key: "campaigns", label: "Campanhas", icon: <Send size={18} /> },
-                        { key: "groups", label: `Grupos (${groups.length})`, icon: <Users size={18} /> },
-                        { key: "connection", label: "Conexão", icon: <QrCode size={18} /> },
-                    ].map(tab => (
-                        <button key={tab.key}
-                            onClick={() => setActiveTab(tab.key as any)}
-                            className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === tab.key
-                                ? "bg-primary text-white shadow-vibrant"
-                                : "bg-white text-gray-400 hover:text-muted-text"}`}
-                        >
-                            {tab.icon} {tab.label}
-                        </button>
-                    ))}
+                    <button onClick={() => setActiveTab("campaigns")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "campaigns" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                        <Send size={18} /> Campanhas
+                    </button>
+                    <button onClick={() => setActiveTab("bags")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "bags" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                        <ShoppingBag size={18} /> Sacolas
+                    </button>
+                    <button onClick={() => setActiveTab("groups")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "groups" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                        <Users size={18} /> Grupos ({groups.length})
+                    </button>
+                    <button onClick={() => setActiveTab("connection")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "connection" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                        <QrCode size={18} /> Conexão
+                    </button>
                 </div>
 
+                {/* Bags Tab content */}
+                {activeTab === "bags" && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-white">
+                            <div>
+                                <h2 className="text-xl font-black text-muted-text lowercase tracking-tighter">Sacolas de Clientes</h2>
+                                <p className="text-xs font-bold text-gray-400">Total de {bags.length} sacolas ativas com itens reservados.</p>
+                            </div>
+                        </div>
+
+                        {bags.length === 0 ? (
+                            <div className="bg-white p-20 rounded-[3rem] text-center shadow-premium border border-white">
+                                <ShoppingBag className="w-16 h-16 text-soft mx-auto mb-6 opacity-20" />
+                                <h3 className="text-xl font-black text-gray-300 lowercase tracking-tighter">Nenhuma sacola aberta no momento</h3>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {bags.map((bag: any) => (
+                                    <div key={bag.phone} className="bg-white rounded-[2.5rem] shadow-premium border border-white overflow-hidden flex flex-col hover:border-primary/20 transition-all">
+                                        <div className="p-6 border-b border-soft flex-1">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black uppercase shadow-sm">
+                                                    {bag.name?.charAt(0) || 'U'}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="font-black text-muted-text truncate text-sm">{bag.name || 'Usuário'}</h3>
+                                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">{bag.phone}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3 mt-4">
+                                                {bag.items.map((item: any, idx: number) => (
+                                                    <div key={idx} className="flex items-center gap-3 bg-soft p-2 rounded-xl">
+                                                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-white shrink-0 shadow-sm">
+                                                            <img src={item.products?.image_url} alt="" className="w-full h-full object-cover" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-[10px] font-black text-muted-text truncate">{item.products?.name}</p>
+                                                            <p className="text-[9px] font-bold text-primary">R$ {Number(item.products?.price || 0).toFixed(2).replace('.', ',')}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 bg-primary/[0.02] flex justify-between items-center">
+                                            <div>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total da Sacola</p>
+                                                <p className="text-lg font-black text-primary">R$ {bag.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Itens</p>
+                                                <p className="text-xs font-black text-muted-text">{bag.items.length}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
                 {/* ── CAMPAIGNS TAB ── */}
                 {activeTab === "campaigns" && (
                     <div className="space-y-6">
@@ -492,11 +748,11 @@ export default function AdminWhatsAppDashboard() {
                                         : 0;
                                     return (
                                         <div key={campaign.id}
-                                            className="bg-white p-6 rounded-[2rem] shadow-premium border border-white hover:border-primary/20 transition-all"
+                                            className={`bg-white p-6 rounded-[2rem] shadow-premium border-2 transition-all ${campaign.status === "running" ? "border-primary shadow-vibrant ring-4 ring-primary/5" : "border-white"}`}
                                         >
                                             <div className="flex items-center gap-5">
                                                 {/* Status dot */}
-                                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${st.dot} ${campaign.status === "running" ? "animate-pulse" : ""}`} />
+                                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${st.dot} ${campaign.status === "running" ? "animate-ping" : ""}`} />
 
                                                 {/* Name + category */}
                                                 <div className="flex-1 min-w-0">
@@ -764,8 +1020,13 @@ export default function AdminWhatsAppDashboard() {
 
                             {/* Data e hora */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <Calendar size={12} /> Data e Hora do Disparo
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-1.5"><Calendar size={12} /> Data e Hora do Disparo</div>
+                                    {serverTime && (
+                                        <span className="text-primary normal-case">
+                                            Horário do servidor: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
                                 </label>
                                 <input type="datetime-local"
                                     className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"

@@ -48,7 +48,7 @@ function CheckoutWhatsAppContent() {
         try {
             const coords = await deliveryService.getCoordsFromAddress(address);
             if (coords) {
-                const fee = deliveryService.calculateFee(coords.lat, coords.lng);
+                const fee = await deliveryService.calculateFee(coords.lat, coords.lng);
                 setShippingFee(fee);
                 toast.success(`Frete calculado: R$ ${fee.toFixed(2)}`);
             } else {

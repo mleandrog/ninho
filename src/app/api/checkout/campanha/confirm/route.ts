@@ -4,7 +4,7 @@ import { evolutionService } from "@/services/evolution";
 
 export async function POST(req: Request) {
     try {
-        const { campaignId, phone, selectedItemIds, deliveryType, address } = await req.json();
+        const { campaignId, phone, selectedItemIds, deliveryType, address, shippingFee } = await req.json();
 
         if (!campaignId || !phone || !selectedItemIds?.length) {
             return NextResponse.json({ error: "Dados obrigatórios ausentes" }, { status: 400 });
@@ -12,7 +12,14 @@ export async function POST(req: Request) {
 
         console.log(`[CampaignConfirm] Confirmando pedido. Campanha ${campaignId} / Phone: ${phone}`);
 
-        // 1. Buscar os itens selecionados da priority_queue
+        // 1. Buscar configurações do WhatsApp
+        const { data: settings } = await supabase
+            .from('whatsapp_settings')
+            .select('*')
+            .limit(1)
+            .single();
+
+        // 2. Buscar os itens selecionados da priority_queue
         const { data: items, error: fetchError } = await supabase
             .from('priority_queue')
             .select('*, products(id, name, price)')
@@ -26,7 +33,8 @@ export async function POST(req: Request) {
         }
 
         // 2. Calcular total
-        const totalAmount = items.reduce((acc, item) => acc + Number(item.products?.price || 0), 0);
+        const itemsTotal = items.reduce((acc, item) => acc + Number(item.products?.price || 0), 0);
+        const totalAmount = itemsTotal + (Number(shippingFee) || 0);
 
         // 3. Tentar encontrar o perfil do cliente
         const { data: profile } = await supabase
@@ -91,7 +99,8 @@ export async function POST(req: Request) {
                 phone: phone,
             });
 
-            const dueDate = new Date(Date.now() + 60 * 60 * 1000).toISOString().split('T')[0]; // 1 hora de validade
+            const expirationMinutes = settings?.payment_expiration_minutes || 60;
+            const dueDate = new Date(Date.now() + expirationMinutes * 60 * 1000).toISOString().split('T')[0];
             const description = `Pedido #${orderNumber} - Campanha Ninho Lar`;
 
             if (req.headers.get('x-payment-method') === 'pix') {
