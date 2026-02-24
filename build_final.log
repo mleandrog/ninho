@@ -1,0 +1,66 @@
+ÔÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\marco\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\marco\OneDrive\Documentos\Ninho Lar\package-lock.json
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 32.0s
+  Running TypeScript ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/38) ...
+  Generating static pages using 3 workers (9/38) 
+  Generating static pages using 3 workers (18/38) 
+  Generating static pages using 3 workers (28/38) 
+Ô£ô Generating static pages using 3 workers (38/38) in 1765.6ms
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî Ôùï /
+Ôö£ Ôùï /_not-found
+Ôö£ Ôùï /admin
+Ôö£ Ôùï /admin/categorias
+Ôö£ Ôùï /admin/configuracoes
+Ôö£ Ôùï /admin/entregadores
+Ôö£ Ôùï /admin/frete
+Ôö£ Ôùï /admin/pedidos
+Ôö£ Ôùï /admin/produtos
+Ôö£ Ôùï /admin/relatorios
+Ôö£ Ôùï /admin/whatsapp
+Ôö£ ãÆ /admin/whatsapp/campanhas/[id]
+Ôö£ ãÆ /api/ai/chat
+Ôö£ ãÆ /api/auth/link-orders
+Ôö£ ãÆ /api/auth/send-otp
+Ôö£ ãÆ /api/auth/verify-otp
+Ôö£ ãÆ /api/checkout/campanha/confirm
+Ôö£ ãÆ /api/checkout/mercado-pago
+Ôö£ ãÆ /api/checkout/wa
+Ôö£ ãÆ /api/cron/automation
+Ôö£ ãÆ /api/payments/webhook
+Ôö£ ãÆ /api/utils/time
+Ôö£ ãÆ /api/webhooks/asaas
+Ôö£ ãÆ /api/webhooks/whatsapp
+Ôö£ ãÆ /api/whatsapp/campaign/cron
+Ôö£ ãÆ /api/whatsapp/campaign/start
+Ôö£ ãÆ /api/whatsapp/campaign/stop
+Ôö£ ãÆ /api/whatsapp/groups
+Ôö£ ãÆ /api/whatsapp/instance
+Ôö£ ãÆ /api/whatsapp/webhook
+Ôö£ Ôùï /catalogo
+Ôö£ Ôùï /checkout
+Ôö£ ãÆ /checkout/campanha/[campaignId]/[phone]
+Ôö£ ãÆ /checkout/wa/[queue_id]
+Ôö£ Ôùï /checkout/whatsapp
+Ôö£ Ôùï /login
+Ôö£ Ôùï /perfil
+Ôö£ Ôùï /produtos/id
+Ôöö Ôùï /registro
+
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+

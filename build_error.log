@@ -1,0 +1,26 @@
+ÔÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\marco\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\marco\OneDrive\Documentos\Ninho Lar\package-lock.json
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 34.9s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/admin/whatsapp/page.tsx:169:17
+Type error: Cannot find name 'bagRes'.
+
+  167 |
+  168 |             // Agrupar sacolas por cliente
+> 169 |             if (bagRes.data) {
+      |                 ^
+  170 |                 const grouped = bagRes.data.reduce((acc: any, item: any) => {
+  171 |                     const phone = item.customer_phone;
+  172 |                     if (!acc[phone]) acc[phone] = {
+Next.js build worker exited with code: 1 and signal: null

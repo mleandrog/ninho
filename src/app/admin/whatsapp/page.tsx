@@ -67,6 +67,8 @@ export default function AdminWhatsAppDashboard() {
     // Filtros
     const [search, setSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState<CampaignStatus | "">("");
+    const [filterDateFrom, setFilterDateFrom] = useState("");
+    const [filterDateTo, setFilterDateTo] = useState("");
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -174,7 +176,16 @@ export default function AdminWhatsAppDashboard() {
     const filteredCampaigns = campaigns?.filter(c => {
         const matchesSearch = (c.name || "").toLowerCase().includes(search.toLowerCase());
         const matchesStatus = filterStatus === "" || c.status === filterStatus;
-        return matchesSearch && matchesStatus;
+
+        // Filtro por data (baseado no agendamento)
+        let matchesDate = true;
+        if (c.scheduled_at) {
+            const campDate = c.scheduled_at.split('T')[0];
+            if (filterDateFrom && campDate < filterDateFrom) matchesDate = false;
+            if (filterDateTo && campDate > filterDateTo) matchesDate = false;
+        }
+
+        return matchesSearch && matchesStatus && matchesDate;
     }) || [];
 
     // ─── Campaign actions ─────────────────────────────────────────────────────
@@ -615,9 +626,6 @@ export default function AdminWhatsAppDashboard() {
                     <button onClick={() => setActiveTab("campaigns")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "campaigns" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
                         <Send size={18} /> Campanhas
                     </button>
-                    <button onClick={() => (window.location.href = '/admin/pedidos')} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 bg-white text-gray-400 hover:text-muted-text`}>
-                        <ShoppingBag size={18} /> Sacolas
-                    </button>
                     <button onClick={() => setActiveTab("groups")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "groups" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
                         <Users size={18} /> Grupos ({groups.length})
                     </button>
@@ -659,6 +667,25 @@ export default function AdminWhatsAppDashboard() {
                                             <option key={key} value={key}>{cfg.label}</option>
                                         ))}
                                     </select>
+                                    <div className="flex gap-2 items-center">
+                                        <div className="relative">
+                                            <input
+                                                type="date"
+                                                className="pl-4 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-xs outline-none shadow-premium focus:ring-2 focus:ring-primary/20"
+                                                value={filterDateFrom}
+                                                onChange={e => setFilterDateFrom(e.target.value)}
+                                            />
+                                        </div>
+                                        <span className="text-gray-300 font-black text-[10px]">ATÉ</span>
+                                        <div className="relative">
+                                            <input
+                                                type="date"
+                                                className="pl-4 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-xs outline-none shadow-premium focus:ring-2 focus:ring-primary/20"
+                                                value={filterDateTo}
+                                                onChange={e => setFilterDateTo(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <Button
