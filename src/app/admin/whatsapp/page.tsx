@@ -137,11 +137,11 @@ export default function AdminWhatsAppDashboard() {
         }
     };
 
-    const filteredCampaigns = campaigns.filter(c => {
-        const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const filteredCampaigns = campaigns?.filter(c => {
+        const matchesSearch = (c.name || "").toLowerCase().includes(search.toLowerCase());
         const matchesStatus = filterStatus === "" || c.status === filterStatus;
         return matchesSearch && matchesStatus;
-    });
+    }) || [];
 
     // ─── Campaign actions ─────────────────────────────────────────────────────
     const openModal = () => {
