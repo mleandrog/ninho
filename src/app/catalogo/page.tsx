@@ -27,7 +27,9 @@ export default function CatalogPage() {
 
             const { data: prodData } = await supabase
                 .from("products")
-                .select("*, categories(name, slug)");
+                .select("*, categories(name, slug)")
+                .eq("available_in_store", true) // Ocultar produtos 'Aguardando'
+                .eq("is_whatsapp_exclusive", false); // Ocultar produtos exclusivos do WA
             setProducts(prodData || []);
         } catch (error) {
             console.error("Error fetching data:", error);
