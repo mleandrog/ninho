@@ -6,6 +6,7 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/Button";
 import { Users, Plus, Search, Edit2, Trash2, X, Loader2, Shield, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { clsx } from "clsx";
 
 type Level = { id: string; name: string; label: string; color: string };
 type Customer = {
