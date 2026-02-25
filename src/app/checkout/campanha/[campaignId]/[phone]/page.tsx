@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingBag, Truck, X, Package, Loader2, MapPin, Calculator, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, Truck, X, Package, Loader2, MapPin, Calculator, CheckCircle2, User } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { deliveryService } from "@/services/delivery";
 
@@ -18,6 +18,8 @@ export default function CampaignCartPage({
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
     const [alreadyCompleted, setAlreadyCompleted] = useState(false);
+    const [customerName, setCustomerName] = useState('');
+    const [cpf, setCpf] = useState('');
 
     const [deliveryType, setDeliveryType] = useState<'delivery' | 'sacola'>('sacola');
     const [paymentMethod, setPaymentMethod] = useState<'pix' | 'link'>('pix');
@@ -25,6 +27,17 @@ export default function CampaignCartPage({
     const [settings, setSettings] = useState<any>(null);
     const [shippingFee, setShippingFee] = useState(0);
     const [calculating, setCalculating] = useState(false);
+
+    const formatCpf = (value: string) => {
+        const digits = value.replace(/\D/g, '').slice(0, 11);
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+        if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+        return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+    };
+    const cpfDigits = cpf.replace(/\D/g, '');
+    const isCpfValid = cpfDigits.length === 11;
+    const isFormValid = customerName.trim().length >= 3 && isCpfValid;
 
     useEffect(() => {
         fetchCartItems();
@@ -126,6 +139,8 @@ export default function CampaignCartPage({
                 body: JSON.stringify({
                     campaignId,
                     phone,
+                    customerName: customerName.trim(),
+                    cpfCnpj: cpfDigits,
                     selectedItemIds: items.map(i => i.id),
                     deliveryType,
                     address: deliveryType === 'delivery' ? address : null,
@@ -244,6 +259,33 @@ export default function CampaignCartPage({
                             </div>
                         </div>
 
+                        {/* Dados Pessoais */}
+                        <div className="bg-white rounded-3xl p-6 mb-6 shadow-sm space-y-4">
+                            <div className="flex items-center gap-2">
+                                <User className="text-primary" size={18} />
+                                <h2 className="font-black text-gray-800 text-sm uppercase tracking-widest">Seus Dados</h2>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Nome completo"
+                                value={customerName}
+                                onChange={e => setCustomerName(e.target.value)}
+                                className="w-full px-4 py-3 rounded-2xl bg-soft border border-transparent focus:border-primary/30 focus:outline-none font-bold text-gray-700"
+                            />
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="CPF (000.000.000-00)"
+                                value={cpf}
+                                onChange={e => setCpf(formatCpf(e.target.value))}
+                                className={`w-full px-4 py-3 rounded-2xl bg-soft border font-bold text-gray-700 focus:outline-none transition-colors ${cpf && !isCpfValid ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-primary/30'
+                                    }`}
+                            />
+                            {cpf && !isCpfValid && (
+                                <p className="text-xs text-red-400 font-bold">CPF deve ter 11 dígitos</p>
+                            )}
+                        </div>
+
                         {/* Tipo de entrega */}
                         <div className="bg-white rounded-3xl p-6 mb-6 shadow-sm">
                             <h2 className="font-black text-gray-800 mb-4 text-sm uppercase tracking-widest">Como quer receber?</h2>
@@ -341,7 +383,7 @@ export default function CampaignCartPage({
                         {/* Botão Confirmar */}
                         <button
                             onClick={handleConfirm}
-                            disabled={confirming}
+                            disabled={confirming || !isFormValid}
                             className="w-full py-5 bg-primary text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-primary/90 active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                         >
                             {confirming ? (

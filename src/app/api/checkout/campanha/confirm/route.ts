@@ -4,7 +4,7 @@ import { evolutionService } from "@/services/evolution";
 
 export async function POST(req: Request) {
     try {
-        const { campaignId, phone, selectedItemIds, deliveryType, address, shippingFee } = await req.json();
+        const { campaignId, phone, customerName, cpfCnpj, selectedItemIds, deliveryType, address, shippingFee } = await req.json();
 
         if (!campaignId || !phone || !selectedItemIds?.length) {
             return NextResponse.json({ error: "Dados obrigatórios ausentes" }, { status: 400 });
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
             .from('orders')
             .insert({
                 customer_phone: phone,
-                customer_name: items[0].customer_name,
+                customer_name: customerName || items[0].customer_name,
                 status: 'pending',
                 total_amount: totalAmount,
                 payment_status: 'pending',
@@ -95,8 +95,9 @@ export async function POST(req: Request) {
             const { asaasService } = await import('@/services/asaas');
 
             const asaasCustomerId = await asaasService.findOrCreateCustomer({
-                name: items[0].customer_name || 'Cliente Ninho Lar',
+                name: customerName || items[0].customer_name || 'Cliente Ninho Lar',
                 phone: phone,
+                cpfCnpj: cpfCnpj,
             });
 
             const expirationMinutes = settings?.payment_expiration_minutes || 60;

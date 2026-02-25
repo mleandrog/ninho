@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 
 export async function POST(req: Request) {
     try {
@@ -9,15 +8,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
         }
 
-        // Passa o item da fila para o status skipped
-        const { error } = await supabase
-            .from('priority_queue')
-            .update({ status: 'skipped' })
-            .eq('id', id);
+        // Usar releaseItem para: marcar skipped + notificar próximo OU reativar produto
+        const { queueService } = await import('@/services/queue');
+        const result = await queueService.releaseItem(id, 'skipped');
 
-        if (error) throw error;
-
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ ...result });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

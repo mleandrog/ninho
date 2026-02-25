@@ -1,19 +1,59 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { evolutionService } from "@/services/evolution";
+import { queueService } from "@/services/queue";
 
 export const automationService = {
     /**
-     * Verifica itens na fila que expiraram (processing)
-     * e delega para o queueService para avançar a fila.
+     * Verifica itens na fila com status 'notified' que já passaram do tempo de expiração.
+     * Para cada item expirado, chama releaseItem() que notifica o próximo ou reativa o produto.
      */
     async processQueueExpirations() {
-        // Fluxo antigo de fila removido. Agora o carrinho é consolidado ao final da campanha.
-        console.log('[Automation] processQueueExpirations ignorado (fluxo consolidado ativo).');
+        console.log('[Automation] Verificando itens expirados na priority_queue...');
+
+        // Buscar configurações para saber o tempo de expiração do carrinho
+        const { data: settings } = await supabase
+            .from('whatsapp_settings')
+            .select('cart_expiration_minutes')
+            .limit(1)
+            .single();
+
+        const expirationMinutes = settings?.cart_expiration_minutes || 60;
+        const cutoff = new Date(Date.now() - expirationMinutes * 60 * 1000).toISOString();
+
+        // Buscar itens 'notified' criados antes do cutoff (já expiraram)
+        const { data: expiredItems, error } = await supabase
+            .from('priority_queue')
+            .select('id, customer_name, product_id')
+            .eq('status', 'notified')
+            .lt('created_at', cutoff);
+
+        if (error) {
+            console.error('[Automation] Erro ao buscar itens expirados:', error);
+            return;
+        }
+
+        if (!expiredItems || expiredItems.length === 0) {
+            console.log('[Automation] Nenhum item expirado encontrado.');
+            return;
+        }
+
+        console.log(`[Automation] ${expiredItems.length} item(ns) expirado(s) encontrado(s). Processando...`);
+
+        for (const item of expiredItems) {
+            try {
+                const result = await queueService.releaseItem(item.id, 'expired');
+                console.log(`[Automation] Item ${item.id} processado:`, result);
+            } catch (err) {
+                console.error(`[Automation] Erro ao processar item ${item.id}:`, err);
+            }
+        }
+
+        console.log('[Automation] processQueueExpirations concluído.');
     },
 
     /**
-   * Envia alertas para sacolas abertas (10, 20, 30 dias)
-   */
+     * Envia alertas para sacolas abertas (10, 20, 30 dias)
+     */
     async processBagAlerts() {
         const intervals = [10, 20, 30];
         const now = new Date();
@@ -22,8 +62,6 @@ export const automationService = {
             const targetDate = new Date();
             targetDate.setDate(now.getDate() - days);
 
-            // Buscar sacolas que tiveram a última interação exatamente nesse intervalo
-            // (Para simplificar, buscamos sacolas 'open' com last_interaction antiga)
             const { data: bags } = await supabase
                 .from("bags")
                 .select("*, profiles(full_name, phone)")
@@ -48,7 +86,6 @@ export const automationService = {
 
                     if (message) {
                         await evolutionService.sendMessage(customerPhone, message);
-                        // Atualizar last_interaction para não repetir o alerta no mesmo dia
                         await supabase
                             .from("bags")
                             .update({ last_interaction: now.toISOString() })
