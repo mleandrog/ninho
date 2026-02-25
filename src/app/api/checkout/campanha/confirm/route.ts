@@ -127,7 +127,14 @@ export async function POST(req: Request) {
             if (paymentData.chargeId) {
                 await supabase
                     .from('orders')
-                    .update({ payment_method: paymentData.type, payment_status: 'pending' })
+                    .update({
+                        payment_method: paymentData.type,
+                        payment_status: 'pending',
+                        asaas_charge_id: paymentData.chargeId,
+                        asaas_invoice_url: paymentData.invoiceUrl || null,
+                        pix_qr_code: paymentData.qrCode || null,
+                        pix_payload: paymentData.qrCodePayload || null,
+                    })
                     .eq('id', order.id);
             }
         } catch (err: any) {

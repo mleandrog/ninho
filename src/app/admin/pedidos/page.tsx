@@ -6,7 +6,7 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { toast } from "react-hot-toast";
 import {
     Clock, CheckCircle, Truck, AlertCircle, Eye,
-    RefreshCcw, Search, Filter, X, ShoppingBag, User, Calendar as CalendarIcon
+    RefreshCcw, Search, Filter, X, ShoppingBag, User, Calendar as CalendarIcon, MessageSquare
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -86,6 +86,22 @@ export default function AdminOrdersPage() {
             setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
         } catch (err: any) {
             toast.error("Erro ao atualizar: " + err.message);
+        }
+    };
+
+    const handleResendInvoice = async (orderId: string) => {
+        const toastId = toast.loading("Reenviando fatura...");
+        try {
+            const res = await fetch("/api/admin/resend-invoice", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Erro ao reenviar");
+            toast.success("Fatura reenviada com sucesso!", { id: toastId });
+        } catch (err: any) {
+            toast.error(err.message, { id: toastId });
         }
     };
 
@@ -327,6 +343,17 @@ export default function AdminOrdersPage() {
                                                     Ativa
                                                 </div>
                                             )}
+
+                                            {activeTab === "pedidos" && item.status !== "canceled" && (item.asaas_invoice_url || item.pix_payload) && (
+                                                <button
+                                                    onClick={() => handleResendInvoice(item.id)}
+                                                    className="w-10 h-10 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-all"
+                                                    title="Reenviar Fatura via WhatsApp"
+                                                >
+                                                    <MessageSquare size={18} />
+                                                </button>
+                                            )}
+
                                             <button
                                                 onClick={() => activeTab === 'sacolas' ? setSelectedBag(item) : undefined}
                                                 className="w-10 h-10 rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all"

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingBag, Truck, X, Package, Loader2, MapPin, Calculator, CheckCircle2, User } from "lucide-react";
+import { ShoppingBag, Truck, X, Package, Loader2, MapPin, Calculator, CheckCircle2, User, Clock, Copy, ExternalLink } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { deliveryService } from "@/services/delivery";
 
@@ -18,6 +18,10 @@ export default function CampaignCartPage({
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
     const [alreadyCompleted, setAlreadyCompleted] = useState(false);
+    const [isExpired, setIsExpired] = useState(false);
+    const [pendingOrder, setPendingOrder] = useState<any>(null); // pedido criado mas não pago
+    const [pixData, setPixData] = useState<{ qrCode?: string; qrCodePayload?: string; invoiceUrl?: string } | null>(null);
+    const [copied, setCopied] = useState(false);
     const [customerName, setCustomerName] = useState('');
     const [cpf, setCpf] = useState('');
 
@@ -62,8 +66,23 @@ export default function CampaignCartPage({
         } else {
             setItems(data || []);
 
-            // Se carrinho vazio, verificar se os itens já foram processados
             if (!data || data.length === 0) {
+                // Verificar se há itens expirados
+                const { data: expiredItems } = await supabase
+                    .from('priority_queue')
+                    .select('id')
+                    .eq('campaign_id', campaignId)
+                    .eq('customer_phone', phone)
+                    .in('status', ['expired', 'skipped'])
+                    .limit(1);
+
+                if (expiredItems && expiredItems.length > 0) {
+                    setIsExpired(true);
+                    setLoading(false);
+                    return;
+                }
+
+                // Verificar se há itens completed
                 const { data: completedItems } = await supabase
                     .from('priority_queue')
                     .select('id')
@@ -73,7 +92,30 @@ export default function CampaignCartPage({
                     .limit(1);
 
                 if (completedItems && completedItems.length > 0) {
-                    setAlreadyCompleted(true);
+                    // Verificar se há pedido com pagamento ainda pendente
+                    const customerPhoneClean = phone.replace(/\D/g, '');
+                    const { data: pendingOrders } = await supabase
+                        .from('orders')
+                        .select('id, order_number, total_amount, asaas_invoice_url, pix_qr_code, pix_payload, payment_method, payment_status')
+                        .eq('customer_phone', phone)
+                        .eq('payment_status', 'pending')
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    if (pendingOrders && pendingOrders.length > 0) {
+                        // Tem pedido criado mas não pago — mostrar tela de pagamento
+                        const order = pendingOrders[0];
+                        setPendingOrder(order);
+                        if (order.pix_qr_code || order.pix_payload) {
+                            setPixData({
+                                qrCode: order.pix_qr_code,
+                                qrCodePayload: order.pix_payload,
+                                invoiceUrl: order.asaas_invoice_url,
+                            });
+                        }
+                    } else {
+                        setAlreadyCompleted(true);
+                    }
                 }
             }
         }
@@ -151,24 +193,34 @@ export default function CampaignCartPage({
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao confirmar pedido.');
 
-            // ✅ REDIRECT IMEDIATO para link de pagamento ASAAS (Para PIX e Link)
-            if (data.payment?.invoiceUrl) {
-                toast.success('Pedido reservado! Direcionando para pagamento...');
-                // Agressivo: redireciona em 150ms para garantir que aconteça
-                setTimeout(() => {
-                    window.location.replace(data.payment.invoiceUrl);
-                }, 150);
-                return; // Sai imediatamente para não renderizar nada mais
+            toast.success('Pedido reservado! 🎉');
+
+            // PIX: mostrar QR Code na tela
+            if (data.payment?.type === 'pix' && (data.payment?.qrCode || data.payment?.qrCodePayload)) {
+                setPixData({
+                    qrCode: data.payment.qrCode,
+                    qrCodePayload: data.payment.qrCodePayload,
+                    invoiceUrl: data.payment.invoiceUrl,
+                });
+                setPendingOrder({ order_number: data.orderNumber, total_amount: finalTotal });
+                setItems([]);
+                return;
             }
 
-            // Fallback apenas se o Asaas não gerar link de cobrança por algum erro
-            toast.error('Erro ao gerar link de pagamento. Tente novamente.');
+            // Outros métodos: redirecionar para link da fatura
+            if (data.payment?.invoiceUrl) {
+                setTimeout(() => { window.location.replace(data.payment.invoiceUrl); }, 150);
+                return;
+            }
+
+            toast.error('Pedido criado, mas link de pagamento não disponível. Verifique seu WhatsApp.');
         } catch (err: any) {
             toast.error(err.message);
         } finally {
             setConfirming(false);
         }
     };
+
 
     if (loading) {
         return (
@@ -178,7 +230,121 @@ export default function CampaignCartPage({
         );
     }
 
-    // Tela de Confirmação Removida - Redirecionamento Direto para Asaas.
+    // Tela: PIX gerado — QR Code inline
+    if (pixData) {
+        return (
+            <div className="min-h-screen bg-soft py-10 px-4">
+                <div className="max-w-lg mx-auto">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle2 className="w-8 h-8 text-green-500" />
+                        </div>
+                        <h1 className="text-3xl font-black text-gray-800">Pedido Reservado! 🎉</h1>
+                        {pendingOrder?.order_number && (
+                            <p className="text-gray-400 font-bold mt-1">Pedido #{pendingOrder.order_number}</p>
+                        )}
+                    </div>
+
+                    <div className="bg-white rounded-3xl p-8 shadow-sm mb-4">
+                        <h2 className="font-black text-gray-800 text-center mb-6 uppercase tracking-wider text-sm">Pague via PIX</h2>
+
+                        {pixData.qrCode && (
+                            <div className="flex justify-center mb-6">
+                                <img
+                                    src={`data:image/png;base64,${pixData.qrCode}`}
+                                    alt="QR Code PIX"
+                                    className="w-52 h-52 rounded-2xl border-4 border-primary/10"
+                                />
+                            </div>
+                        )}
+
+                        {pixData.qrCodePayload && (
+                            <div className="space-y-3">
+                                <p className="text-xs font-black text-gray-400 uppercase tracking-widest text-center">Código Copia e Cola</p>
+                                <div className="bg-soft rounded-2xl p-4 flex items-center gap-3">
+                                    <p className="text-xs text-gray-600 font-mono flex-1 break-all select-all">{pixData.qrCodePayload}</p>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(pixData!.qrCodePayload!);
+                                            setCopied(true);
+                                            setTimeout(() => setCopied(false), 2500);
+                                        }}
+                                        className="flex-shrink-0 p-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all"
+                                    >
+                                        {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+                                    </button>
+                                </div>
+                                {copied && <p className="text-center text-green-500 font-black text-sm">Código copiado! ✓</p>}
+                            </div>
+                        )}
+
+                        {pixData.invoiceUrl && (
+                            <a
+                                href={pixData.invoiceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-6 flex items-center justify-center gap-2 text-primary font-bold text-sm hover:underline"
+                            >
+                                <ExternalLink size={16} /> Abrir fatura completa
+                            </a>
+                        )}
+                    </div>
+
+                    <p className="text-center text-xs text-gray-400 font-bold">
+                        ⏳ O código PIX expira em breve. Pague agora para garantir seu produto!
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Tela: Pedido expirado
+    if (isExpired) {
+        return (
+            <div className="min-h-screen bg-soft flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-premium">
+                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-800 mb-3">Tempo Expirado ⏳</h2>
+                    <p className="text-gray-500 font-medium text-sm leading-relaxed">
+                        Infelizmente o tempo para finalizar este pedido expirou e os produtos foram liberados para outros clientes.
+                    </p>
+                    <p className="text-gray-400 font-bold text-sm mt-4">
+                        Se ainda tiver interesse, entre em contato pelo WhatsApp e verifique a disponibilidade! 💛
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Tela: Pedido pendente (retornou ao link sem ter pago)
+    if (pendingOrder && !pixData) {
+        return (
+            <div className="min-h-screen bg-soft flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-premium">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <ShoppingBag className="w-8 h-8 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-800 mb-2">Pedido #{pendingOrder.order_number}</h2>
+                    <p className="text-gray-500 font-medium text-sm mb-6">
+                        Seu pedido foi reservado mas o pagamento ainda não foi confirmado.
+                    </p>
+                    {pendingOrder.asaas_invoice_url && (
+                        <a
+                            href={pendingOrder.asaas_invoice_url}
+                            className="block w-full py-4 bg-primary text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-lg"
+                        >
+                            Ir para Pagamento →
+                        </a>
+                    )}
+                    <p className="text-gray-400 font-bold text-xs mt-4">
+                        Link de pagamento também foi enviado no seu WhatsApp.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-soft py-10 px-4">
@@ -198,9 +364,9 @@ export default function CampaignCartPage({
                         alreadyCompleted ? (
                             <div className="bg-white rounded-3xl p-10 text-center">
                                 <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                                <p className="text-gray-700 font-black text-lg mb-2">Pedido já realizado! ✅</p>
+                                <p className="text-gray-700 font-black text-lg mb-2">Pedido já efetuado e pago! ✅</p>
                                 <p className="text-gray-400 font-medium text-sm">
-                                    Você já confirmou este pedido anteriormente. Se precisar de ajuda, entre em contato pelo WhatsApp.
+                                    Obrigado pela compra! Se precisar de ajuda, entre em contato pelo WhatsApp.
                                 </p>
                             </div>
                         ) : (
