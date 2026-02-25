@@ -22,14 +22,44 @@ export default function CatalogPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const { data: catData } = await supabase.from("categories").select("*");
-            setCategories(catData || []);
+            // 1. Verificar nível do usuário logado
+            const { data: { user } } = await supabase.auth.getUser();
+            let userLevelId: string | null = null;
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('customer_level_id')
+                    .eq('id', user.id)
+                    .single();
+                userLevelId = profile?.customer_level_id ?? null;
+            }
 
+            // 2. Buscar todos os acessos de categoria
+            const { data: accesses } = await supabase
+                .from('category_level_access')
+                .select('category_id, level_id');
+
+            // 3. Buscar categorias e filtrar por visibilidade
+            const { data: catData } = await supabase.from("categories").select("*");
+            const allAccesses = accesses || [];
+
+            const visibleCats = (catData || []).filter(cat => {
+                const catRestrictions = allAccesses.filter(a => a.category_id === cat.id);
+                // Sem restrição = pública para todos
+                if (catRestrictions.length === 0) return true;
+                // Com restrição = só se o usuário tem o nível permitido
+                return userLevelId && catRestrictions.some(a => a.level_id === userLevelId);
+            });
+            setCategories(visibleCats);
+
+            // 4. Buscar produtos (apenas das categorias visíveis)
+            const visibleCatIds = visibleCats.map(c => c.id);
             const { data: prodData } = await supabase
                 .from("products")
                 .select("*, categories(name, slug)")
-                .eq("available_in_store", true) // Ocultar produtos 'Aguardando'
-                .eq("is_whatsapp_exclusive", false); // Ocultar produtos exclusivos do WA
+                .eq("available_in_store", true)
+                .eq("is_whatsapp_exclusive", false)
+                .in("category_id", visibleCatIds.length > 0 ? visibleCatIds : [-1]);
             setProducts(prodData || []);
         } catch (error) {
             console.error("Error fetching data:", error);

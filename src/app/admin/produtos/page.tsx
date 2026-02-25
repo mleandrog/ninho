@@ -73,8 +73,8 @@ export default function AdminProductsPage() {
                     let width = img.width;
                     let height = img.height;
 
-                    // Redimensionar para no máximo 1200px (um pouco mais para melhor qualidade no branding)
-                    const max = 1200;
+                    // Redimensionar para no máximo 1600px (alta qualidade)
+                    const max = 1600;
                     if (width > height && width > max) {
                         height = (height * max) / width;
                         width = max;
@@ -85,8 +85,12 @@ export default function AdminProductsPage() {
 
                     canvas.width = width;
                     canvas.height = height;
-                    const ctx = canvas.getContext('2d');
+                    const ctx = canvas.getContext('2d', { alpha: false });
                     if (!ctx) return reject(new Error("Contexto não encontrado"));
+
+                    // Alta qualidade de suavização global
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
 
                     ctx.drawImage(img, 0, 0, width, height);
 
@@ -102,11 +106,11 @@ export default function AdminProductsPage() {
 
                             if (logo.complete && logo.naturalWidth > 0) {
                                 // Configurações do Overlay
-                                const ovHeight = height * 0.18; // 18% da altura da imagem
-                                const ovWidth = ovHeight * 2.2;
+                                const ovHeight = height * 0.20; // 20% da altura
+                                const ovWidth = ovHeight * 2.6;
                                 const x = 30;
                                 const y = height - ovHeight - 30;
-                                const radius = 25;
+                                const radius = ovHeight * 0.28;
 
                                 // Desenhar Retângulo Branco Arredondado
                                 ctx.save();
@@ -130,18 +134,22 @@ export default function AdminProductsPage() {
                                 ctx.fill();
                                 ctx.restore();
 
-                                // Desenhar a Logo (Sol)
-                                // Centralizar o sol verticalmente e colocar à esquerda
-                                const logoPadding = ovHeight * 0.15;
+                                // Desenhar a Logo com suavização máxima
+                                const logoPadding = ovHeight * 0.12;
                                 const logoSize = ovHeight - (logoPadding * 2);
+                                ctx.save();
+                                ctx.imageSmoothingEnabled = true;
+                                ctx.imageSmoothingQuality = 'high';
                                 ctx.drawImage(logo, x + logoPadding, y + logoPadding, logoSize, logoSize);
+                                ctx.restore();
 
-                                // Desenhar o Texto do Tamanho
-                                ctx.fillStyle = '#C4A484'; // Tom marrom claro/médio conforme referência
-                                ctx.font = `900 ${ovHeight * 0.6}px system-ui, -apple-system, sans-serif`;
+                                // Desenhar o Texto do Tamanho (Arial garantida = sem variação)
+                                ctx.fillStyle = '#C4A484';
+                                const fontSize = Math.round(ovHeight * 0.52);
+                                ctx.font = `900 ${fontSize}px Arial, Helvetica, sans-serif`;
                                 ctx.textAlign = 'left';
                                 ctx.textBaseline = 'middle';
-                                ctx.fillText(size, x + logoSize + (logoPadding * 2), y + (ovHeight / 2) + (ovHeight * 0.05));
+                                ctx.fillText(size, x + logoSize + (logoPadding * 2.2), y + (ovHeight / 2));
                             }
                         } catch (err) {
                             console.error("Erro ao processar branding:", err);
@@ -151,7 +159,7 @@ export default function AdminProductsPage() {
                     canvas.toBlob((blob) => {
                         if (blob) resolve(blob);
                         else reject(new Error("Erro na compressão"));
-                    }, 'image/jpeg', 0.9); // 90% qualidade
+                    }, 'image/jpeg', 0.92); // 92% qualidade
                 };
             };
             reader.onerror = (error) => reject(error);
