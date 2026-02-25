@@ -32,18 +32,18 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Nenhum item encontrado" }, { status: 404 });
         }
 
-        // 2. Calcular total
+        // 3. Calcular total
         const itemsTotal = items.reduce((acc, item) => acc + Number(item.products?.price || 0), 0);
         const totalAmount = itemsTotal + (Number(shippingFee) || 0);
 
-        // 3. Tentar encontrar o perfil do cliente
+        // 4. Tentar encontrar o perfil do cliente
         const { data: profile } = await supabase
             .from('profiles')
             .select('id')
             .eq('phone', phone)
             .maybeSingle();
 
-        // 4. Criar pedido único consolidado
+        // 5. Criar pedido único consolidado
         const orderNumber = `WA${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`;
         const { data: order, error: orderError } = await supabase
             .from('orders')
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
 
         if (orderError) throw orderError;
 
-        // 5. Criar itens do pedido
+        // 6. Criar itens do pedido
         const orderItems = items.map(item => ({
             order_id: order.id,
             product_id: item.product_id,
@@ -75,14 +75,14 @@ export async function POST(req: Request) {
         }));
         await supabase.from('order_items').insert(orderItems);
 
-        // 6. Marcar produtos como indisponíveis
+        // 7. Marcar produtos como indisponíveis
         const productIds = items.map(item => item.product_id);
         await supabase
             .from('products')
             .update({ status: 'unavailable' })
             .in('id', productIds);
 
-        // 7. Marcar itens da fila como 'completed'
+        // 8. Marcar itens da fila como 'completed'
         await supabase
             .from('priority_queue')
             .update({ status: 'completed' })
@@ -90,10 +90,10 @@ export async function POST(req: Request) {
 
         // --- INTEGRAÇÃO ASAAS ---
         let paymentData: any = {};
+        let asaasError: string | null = null;
         try {
             const { asaasService } = await import('@/services/asaas');
 
-            // Criar ou encontrar cliente no ASAAS
             const asaasCustomerId = await asaasService.findOrCreateCustomer({
                 name: items[0].customer_name || 'Cliente Ninho Lar',
                 phone: phone,
@@ -123,44 +123,52 @@ export async function POST(req: Request) {
                 paymentData = { type: 'link', ...link };
             }
 
-            // Atualizar o pedido com o ID da cobrança do Asaas se necessário
             if (paymentData.chargeId) {
                 await supabase
                     .from('orders')
-                    .update({
-                        payment_method: paymentData.type,
-                        payment_status: 'pending'
-                        // Aqui você poderia salvar o chargeId em uma coluna específica se houver
-                    })
+                    .update({ payment_method: paymentData.type, payment_status: 'pending' })
                     .eq('id', order.id);
             }
-        } catch (asaasError) {
-            console.error('[CampaignConfirm] Erro Asaas:', asaasError);
-            // Não trava o fluxo, mas logamos o erro
+        } catch (err: any) {
+            asaasError = err?.message || 'Erro desconhecido no Asaas';
+            console.error('[CampaignConfirm] ⚠️ ERRO ASAAS — pagamento não gerado:', asaasError);
         }
 
-        // 8. Enviar DM de confirmação
+        // 9. Enviar DM de confirmação via WhatsApp
         const firstName = items[0].customer_name?.split(' ')[0] || 'Cliente';
         const phoneRaw = items[0].customer_phone_raw || phone;
 
-        let confirmMsg = `✅ Seu pedido *#${orderNumber}* foi reservado com sucesso!\n\n` +
-            `Obrigado, ${firstName}! Para garantir sua reserva e concluir a compra, realize o pagamento no link abaixo. 💛\n\n`;
+        // Fallback URL caso o Asaas falhe
+        const checkoutUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ninhoelar.com.br'}/checkout/campanha/${campaignId}/${encodeURIComponent(phone)}`;
 
-        if (paymentData.invoiceUrl) {
-            confirmMsg += `🔗 *Link de Pagamento Seguro:*\n${paymentData.invoiceUrl}\n\n`;
+        let confirmMsg = `✅ Seu pedido *#${orderNumber}* foi reservado com sucesso!\n\n` +
+            `Obrigado, ${firstName}! Para garantir sua reserva e concluir a compra, realize o pagamento agora. 💛\n\n`;
+
+        if (paymentData.type === 'pix' && paymentData.invoiceUrl) {
+            confirmMsg += `💠 *Pagamento via PIX:*\nAcesse o link abaixo para escanear o QR Code ou copiar o código:\n${paymentData.invoiceUrl}\n\n`;
+            confirmMsg += `⚠️ *ATENÇÃO:* Pague agora para garantir o produto! O código expira em breve.\n\n`;
+        } else if (paymentData.invoiceUrl) {
+            confirmMsg += `🔗 *Link de Pagamento Seguro (Cartão/Boleto):*\n${paymentData.invoiceUrl}\n\n`;
+        } else {
+            // Fallback: Asaas falhou — manda link do checkout
+            confirmMsg += `🔗 *Acesse o link abaixo para finalizar o pagamento:*\n${checkoutUrl}\n\n`;
+            if (asaasError) {
+                console.warn(`[CampaignConfirm] Fallback ativado. Erro Asaas: ${asaasError}`);
+            }
         }
 
         confirmMsg += `Se precisar de ajuda, é só chamar aqui mesmo!`;
 
         await evolutionService.sendMessage(phoneRaw, confirmMsg);
 
-        console.log(`[CampaignConfirm] Pedido ${orderNumber} criado. Asaas: ${paymentData.type || 'N/A'}`);
+        console.log(`[CampaignConfirm] Pedido ${orderNumber} criado. Asaas: ${paymentData.type || 'FALHOU - ' + asaasError}`);
 
         return NextResponse.json({
             success: true,
             orderNumber,
             orderId: order.id,
-            payment: paymentData
+            payment: paymentData,
+            ...(asaasError && { asaasWarning: 'Pagamento não gerado automaticamente. Verifique as credenciais do Asaas.' })
         });
 
     } catch (error: any) {

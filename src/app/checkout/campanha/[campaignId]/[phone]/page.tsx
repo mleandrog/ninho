@@ -123,19 +123,24 @@ export default function CampaignCartPage({
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao confirmar pedido.');
 
+            // ✅ REDIRECT IMEDIATO para link de pagamento (antes de trocar a tela)
+            if (paymentMethod === 'link' && data.payment?.invoiceUrl) {
+                setOrderNumber(data.orderNumber);
+                setPaymentResult(data.payment);
+                setConfirmed(true);
+                toast.success('Pedido confirmado! Redirecionando para pagamento...');
+                // Agressivo: redireciona em 300ms para garantir que aconteça
+                setTimeout(() => {
+                    window.location.replace(data.payment.invoiceUrl);
+                }, 300);
+                return; // Sai imediatamente para não continuar o fluxo
+            }
+
+            // Para PIX: mostra tela de confirmação com QR code
             setOrderNumber(data.orderNumber);
             setPaymentResult(data.payment);
             setConfirmed(true);
-            toast.success('Pedido confirmado!');
-
-            // REDIRECIONAMENTO AUTOMÁTICO se for Link de Pagamento
-            if (paymentMethod === 'link' && data.payment?.invoiceUrl) {
-                setTimeout(() => {
-                    if (typeof window !== "undefined") {
-                        window.location.href = data.payment.invoiceUrl;
-                    }
-                }, 500); // Reduzido o delay para agilizar
-            }
+            toast.success('Pedido confirmado! Pague o PIX para garantir o produto.');
         } catch (err: any) {
             toast.error(err.message);
         } finally {

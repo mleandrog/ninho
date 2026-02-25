@@ -25,6 +25,7 @@ export default function AdminOrdersPage() {
     const [orders, setOrders] = useState<any[]>([]);
     const [bags, setBags] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedBag, setSelectedBag] = useState<any>(null);
 
     // Filtros
     const [search, setSearch] = useState("");
@@ -59,7 +60,14 @@ export default function AdminOrdersPage() {
             // Busca sacolas (carrinhos que não viraram pedido ainda ou estão ativos)
             const { data, error } = await supabase
                 .from("bags")
-                .select("*, profiles:customer_id(full_name)")
+                .select(`
+                    *, 
+                    profiles:customer_id(full_name),
+                    bag_items(
+                        *,
+                        product:product_id(name, image_url, price)
+                    )
+                `)
                 .order("created_at", { ascending: false });
             if (error) throw error;
             setBags(data || []);
@@ -319,7 +327,11 @@ export default function AdminOrdersPage() {
                                                     Ativa
                                                 </div>
                                             )}
-                                            <button className="w-10 h-10 rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all">
+                                            <button
+                                                onClick={() => activeTab === 'sacolas' ? setSelectedBag(item) : undefined}
+                                                className="w-10 h-10 rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all"
+                                                title="Ver Detalhes"
+                                            >
                                                 <Eye size={18} />
                                             </button>
                                         </div>
@@ -330,6 +342,106 @@ export default function AdminOrdersPage() {
                     )}
                 </div>
             </main>
+
+            {/* Modal de Detalhes da Sacola */}
+            {selectedBag && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-muted-text/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-premium overflow-hidden border border-white flex flex-col max-h-[90vh]">
+
+                        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-soft">
+                            <div>
+                                <h2 className="text-2xl font-black text-muted-text flex items-center gap-3">
+                                    <ShoppingBag className="text-primary" size={28} />
+                                    <span>Sacola #{selectedBag.id.slice(0, 8)}</span>
+                                </h2>
+                                <p className="text-sm font-bold text-gray-400 mt-1">
+                                    Cliente: <span className="text-muted-text">{selectedBag.profiles?.full_name || selectedBag.customer_name || 'Desconhecido'}</span>
+                                    {selectedBag.customer_phone && ` (${selectedBag.customer_phone})`}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedBag(null)}
+                                className="w-12 h-12 rounded-2xl bg-white text-gray-400 hover:text-muted-text hover:shadow-sm flex items-center justify-center transition-all border border-gray-100"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-8 overflow-y-auto space-y-6">
+
+                            {/* Resumo */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-soft p-5 rounded-[2rem]">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Criação / Expiração</p>
+                                    <p className="text-sm font-bold text-muted-text">Criada em: {new Date(selectedBag.created_at).toLocaleDateString("pt-BR")}</p>
+                                    <p className="text-sm font-bold text-red-500 mt-1">Expira em: {selectedBag.expires_at ? new Date(selectedBag.expires_at).toLocaleDateString("pt-BR") : 'Não definido'}</p>
+                                </div>
+                                <div className="bg-primary/5 p-5 rounded-[2rem] border border-primary/10">
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Total da Sacola</p>
+                                    <p className="text-2xl font-black text-primary">
+                                        R$ {Number(selectedBag.total_amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Itens */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest px-2">Itens Guardados</h3>
+                                <div className="space-y-3">
+                                    {selectedBag.bag_items?.map((biItem: any) => (
+                                        <div key={biItem.id} className="flex gap-4 p-4 rounded-2xl border border-gray-100 items-center">
+                                            <div className="w-16 h-16 rounded-xl bg-soft overflow-hidden shrink-0">
+                                                {biItem.product?.image_url ? (
+                                                    <img src={biItem.product.image_url} alt={biItem.product.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                        <ShoppingBag size={20} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-muted-text truncate">{biItem.product?.name || "Produto Removido"}</h4>
+                                                <p className="text-xs font-bold text-gray-400">Qtd: {biItem.quantity}x</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="font-black text-primary">
+                                                    R$ {Number(biItem.product?.price || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!selectedBag.bag_items || selectedBag.bag_items.length === 0) && (
+                                        <div className="text-center p-8 bg-soft rounded-2xl text-sm font-bold text-gray-400">
+                                            Nenhum item encontrado nesta sacola.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-between gap-4">
+                            <button
+                                className="px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+                                onClick={() => {
+                                    if (confirm("Deseja expirar esta sacola agora? Os produtos voltarão ao estoque.")) {
+                                        toast("Funcionalidade de devolução estocada será acoplada ao backend.", { icon: "🚧" });
+                                        // Aqui entrará a lógica manual do Expedidor do Admin ou API call respectiva.
+                                    }
+                                }}
+                            >
+                                Expirar e Devolver
+                            </button>
+                            <button
+                                onClick={() => setSelectedBag(null)}
+                                className="px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest bg-gray-200 text-gray-500 hover:bg-gray-300 transition-colors"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
     Settings, Save, Info, MapPin, CreditCard,
-    MessageSquare, Loader2, Search, Smartphone,
-    Globe, Shield, Bell, Bold, Italic
+    MessageSquare, Loader2, Smartphone,
+    Shield, Bold, Italic, ShoppingBag, LayoutTemplate, Phone, Mail
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-type TabType = "geral" | "logistica" | "pagamentos" | "whatsapp";
+type TabType = "geral" | "logistica" | "pagamentos" | "whatsapp" | "sacolas" | "landing";
 
 export default function AdminSettingsPage() {
     const [activeTab, setActiveTab] = useState<TabType>("geral");
@@ -61,6 +61,16 @@ export default function AdminSettingsPage() {
                     store_lng: parseFloat(String(settings.store_lng).replace(',', '.')) || null,
                     store_address: settings.store_address,
                     store_cep: settings.store_cep,
+                    bag_max_days: Number(settings.bag_max_days) || 30,
+                    bag_reminder_days: settings.bag_reminder_days || "15, 10, 7, 3",
+                    // Landing Page
+                    hero_title: settings.hero_title,
+                    hero_subtitle: settings.hero_subtitle,
+                    hero_badge_text: settings.hero_badge_text,
+                    promo_bar_text: settings.promo_bar_text,
+                    footer_phone: settings.footer_phone,
+                    footer_email: settings.footer_email,
+                    footer_about: settings.footer_about,
                 })
                 .eq("id", settings.id);
 
@@ -167,8 +177,8 @@ export default function AdminSettingsPage() {
                 </header>
 
                 {/* Navegação por Abas */}
-                <div className="flex gap-4 mb-8 bg-white/50 p-2 rounded-[2rem] w-fit">
-                    {(["geral", "logistica", "pagamentos", "whatsapp"] as TabType[]).map((tab) => (
+                <div className="flex gap-4 mb-8 bg-white/50 p-2 rounded-[2rem] w-fit flex-wrap">
+                    {(["geral", "logistica", "pagamentos", "whatsapp", "sacolas", "landing"] as TabType[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -177,7 +187,7 @@ export default function AdminSettingsPage() {
                                 : "text-gray-400 hover:text-muted-text hover:bg-white"
                                 }`}
                         >
-                            {tab}
+                            {tab === 'landing' ? '🖼️ Landing Page' : tab}
                         </button>
                     ))}
                 </div>
@@ -425,6 +435,157 @@ export default function AdminSettingsPage() {
                                             placeholder="Mensagem exibida ao finalizar o pedido..."
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
+                    {/* ABA SACOLAS */}
+                    {activeTab === "sacolas" && (
+                        <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-4 mb-2">
+                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                    <ShoppingBag size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-muted-text">Gestão de Sacolas</h2>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Prazos e Lembretes via WhatsApp</p>
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Regras de Validade</h3>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Prazo Máximo da Sacola (Dias)</label>
+                                            <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                value={settings?.bag_max_days || 30}
+                                                onChange={e => setSettings({ ...settings, bag_max_days: parseInt(e.target.value) })}
+                                                min={1}
+                                            />
+                                            <p className="text-[10px] text-gray-400 font-bold px-1">Se passar esse tempo, a sacola será dada como Expirada e os itens voltarão ao estoque.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Lembretes por Robô</h3>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dias restantes para Avisar (Separado por vírgula)</label>
+                                            <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                value={settings?.bag_reminder_days || "15, 10, 7, 3"}
+                                                onChange={e => setSettings({ ...settings, bag_reminder_days: e.target.value })}
+                                            />
+                                            <p className="text-[10px] text-gray-400 font-bold px-1">Exemplo: "15, 10, 7, 3" informará à cliente quando faltarem essas quantidades de dias para expirar a sacola.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+                    {/* ABA LANDING PAGE */}
+                    {activeTab === "landing" && (
+                        <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-4 mb-2">
+                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                    <LayoutTemplate size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-muted-text">Landing Page</h2>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Edite os textos e informações da página inicial da loja</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3">
+                                <Info size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                                <p className="text-xs font-bold text-amber-700 leading-relaxed">
+                                    As alterações aqui refletem diretamente na página inicial (<strong>ninhoelar.com.br</strong>). Salve e recarregue a página para ver as mudanças.
+                                </p>
+                            </div>
+
+                            {/* Seção Hero */}
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-3">🎯 Seção Hero (Banner Principal)</h3>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Badge (ex: Coleção Primavera 2026)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.hero_badge_text || ''}
+                                        onChange={e => setSettings({ ...settings, hero_badge_text: e.target.value })}
+                                        placeholder="Ex: Coleção Verão 2026"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Título Principal (linhas separadas por | )</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.hero_title || ''}
+                                        onChange={e => setSettings({ ...settings, hero_title: e.target.value })}
+                                        placeholder="Ex: VIVA A FESTA!"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Subtítulo</label>
+                                    <textarea
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-medium text-sm h-24 outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.hero_subtitle || ''}
+                                        onChange={e => setSettings({ ...settings, hero_subtitle: e.target.value })}
+                                        placeholder="Ex: Roupas que contam histórias..."
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Barra de Promoção (topo da página)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.promo_bar_text || ''}
+                                        onChange={e => setSettings({ ...settings, promo_bar_text: e.target.value })}
+                                        placeholder="Ex: ✨ Frete Grátis acima de R$ 300"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Seção Footer */}
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-3">🔻 Rodapé (Footer)</h3>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                                            <Phone size={12} /> WhatsApp de Contato
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={settings?.footer_phone || ''}
+                                            onChange={e => setSettings({ ...settings, footer_phone: e.target.value })}
+                                            placeholder="Ex: (11) 99999-9999"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                                            <Mail size={12} /> E-mail de Suporte
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={settings?.footer_email || ''}
+                                            onChange={e => setSettings({ ...settings, footer_email: e.target.value })}
+                                            placeholder="Ex: ola@ninholar.com.br"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Texto "Sobre a Loja"</label>
+                                    <textarea
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-medium text-sm h-24 outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.footer_about || ''}
+                                        onChange={e => setSettings({ ...settings, footer_about: e.target.value })}
+                                        placeholder="Ex: Vestindo a infância com cores e conforto..."
+                                    />
                                 </div>
                             </div>
                         </section>

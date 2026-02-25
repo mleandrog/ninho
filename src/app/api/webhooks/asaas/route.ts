@@ -43,6 +43,12 @@ export async function POST(req: NextRequest) {
 
             console.log(`[ASAAS Webhook] Pedido ${order.order_number} marcado como PAGO.`);
 
+            // Fechar sacola correspondente, se houver
+            await supabase
+                .from('bags')
+                .update({ status: 'closed' })
+                .eq('final_order_id', order.id);
+
             // Opcional: Se for um pedido vindo do WhatsApp, encontrar o item da fila
             const { data: queueItem } = await supabase
                 .from('priority_queue')

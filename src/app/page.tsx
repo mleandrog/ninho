@@ -14,10 +14,25 @@ export default function Home() {
   const { addItem } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [landingSettings, setLandingSettings] = useState<any>(null);
 
   useEffect(() => {
     fetchFeaturedProducts();
+    fetchLandingSettings();
   }, []);
+
+  const fetchLandingSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('whatsapp_settings')
+        .select('hero_title, hero_subtitle, hero_badge_text, promo_bar_text, footer_phone, footer_email, footer_about')
+        .limit(1)
+        .single();
+      if (data) setLandingSettings(data);
+    } catch {
+      // usa defaults se falhar
+    }
+  };
 
   const fetchFeaturedProducts = async () => {
     try {
@@ -25,8 +40,8 @@ export default function Home() {
         .from("products")
         .select("*")
         .eq("is_featured", true)
-        .eq("available_in_store", true) // Apenas produtos disponíveis na loja
-        .eq("is_whatsapp_exclusive", false) // Ocultar exclusivos do WhatsApp
+        .eq("available_in_store", true)
+        .eq("is_whatsapp_exclusive", false)
         .limit(4);
 
       if (error) throw error;
@@ -37,6 +52,15 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Valores dinâmicos com fallback
+  const heroTitle = landingSettings?.hero_title || 'VIVA A FESTA!';
+  const heroSubtitle = landingSettings?.hero_subtitle || 'Roupas que contam histórias e transformam cada brincadeira em um momento mágico. Conforto premium para seu ninho.';
+  const heroBadge = landingSettings?.hero_badge_text || 'Coleção Primavera 2026';
+  const promoBarText = landingSettings?.promo_bar_text || '✨ Frete Grátis em compras acima de R$ 300,00 • Use o cupom: BEMVINDO ✨';
+  const footerPhone = landingSettings?.footer_phone || '(11) 99999-9999';
+  const footerEmail = landingSettings?.footer_email || 'ola@ninholar.com.br';
+  const footerAbout = landingSettings?.footer_about || 'Vestindo a infância com cores, conforto e a liberdade que cada criança merece para brilhar.';
 
   const categories = [
     { name: "Conjuntos", slug: "conjuntos", icon: "👕", color: "bg-[#4ECDC4]" },
@@ -54,7 +78,7 @@ export default function Home() {
         {/* Top Promo Bar */}
         <div className="bg-primary py-2.5 text-center text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-white overflow-hidden whitespace-nowrap">
           <div className="inline-block animate-pulse">
-            ✨ Frete Grátis em compras acima de R$ 300,00 • Use o cupom: <span className="bg-white text-primary px-2 py-0.5 rounded ml-1">BEMVINDO</span> ✨
+            {promoBarText}
           </div>
         </div>
 
@@ -78,17 +102,21 @@ export default function Home() {
             >
               <div className="space-y-4">
                 <span className="inline-flex items-center gap-2 bg-white/40 backdrop-blur-sm px-6 py-2 rounded-full text-sm font-black uppercase tracking-widest text-primary border border-white/50">
-                  <Sparkles size={16} /> Coleção Primavera 2026
+                  <Sparkles size={16} /> {heroBadge}
                 </span>
                 <h1 className="text-7xl lg:text-[10rem] font-black text-white leading-[0.8] tracking-tighter drop-shadow-2xl">
-                  VIVA <br />
-                  A <span className="text-primary italic">FESTA!</span>
+                  {heroTitle.includes('|') ? (
+                    heroTitle.split('|').map((line: string, i: number) => (
+                      <span key={i}>{line.trim()}{i < heroTitle.split('|').length - 1 && <br />}</span>
+                    ))
+                  ) : (
+                    heroTitle
+                  )}
                 </h1>
               </div>
 
               <p className="text-2xl text-accent-foreground/80 max-w-xl font-bold leading-relaxed">
-                Roupas que contam histórias e transformam cada brincadeira
-                em um momento mágico. Conforto premium para seu ninho.
+                {heroSubtitle}
               </p>
 
               <div className="flex flex-wrap gap-6 pt-4">
@@ -321,8 +349,7 @@ export default function Home() {
               <span className="text-4xl font-black tracking-tighter">Ninho<span className="text-primary">Lar</span></span>
             </div>
             <p className="text-lg font-bold text-gray-400 leading-relaxed">
-              Vestindo a infância com cores, conforto e a <br />
-              liberdade que cada criança merece para brilhar.
+              {footerAbout}
             </p>
             <div className="flex gap-5">
               {['📸', '💬', '🐦', '✉️'].map((ico, i) => (
@@ -357,11 +384,11 @@ export default function Home() {
             <h5 className="font-black text-2xl mb-1 flex items-center gap-2">Vem Conversar <div className="h-1 w-10 bg-accent rounded-full" /></h5>
             <div className="space-y-2">
               <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">WhatsApp Central</p>
-              <p className="text-3xl font-black text-white">(11) 99999-9999</p>
+              <p className="text-3xl font-black text-white">{footerPhone}</p>
             </div>
             <div className="space-y-2">
               <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">E-mail de Suporte</p>
-              <p className="text-xl font-bold text-primary italic">ola@ninholar.com.br</p>
+              <p className="text-xl font-bold text-primary italic">{footerEmail}</p>
             </div>
 
             {/* Payment Icons Placeholder */}

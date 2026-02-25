@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/Button";
-import { Plus, Search, Edit2, Trash2, X, MessageSquare, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, MessageSquare, Upload, Loader2, Image as ImageIcon, Info } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function AdminProductsPage() {
@@ -326,7 +326,7 @@ export default function AdminProductsPage() {
                 </header>
 
                 <div className="bg-white rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
-                    <div className="p-8 border-b border-gray-50">
+                    <div className="p-8 border-b border-gray-50 space-y-4">
                         <div className="relative max-w-md">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                             <input
@@ -336,6 +336,14 @@ export default function AdminProductsPage() {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
+                        </div>
+                        {/* Legenda dos status */}
+                        <div className="flex flex-wrap items-center gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                            <Info size={16} className="text-blue-500 shrink-0" />
+                            <span className="text-xs font-black text-blue-700 uppercase tracking-widest">Legenda:</span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-green-100 text-green-700">🟢 Na Loja — disponível para compra pública</span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-red-100 text-red-700">🔴 Reservado — reservado por cliente na campanha, aguardando pagamento</span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-primary/10 text-primary">💬 Exclusivo WA — só aparece em campanhas WhatsApp, nunca na loja pública</span>
                         </div>
                     </div>
 
@@ -405,11 +413,27 @@ export default function AdminProductsPage() {
                                                 R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </td>
                                             <td className="px-8 py-6">
-                                                <div className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${product.available_in_store
-                                                    ? 'bg-green-100 text-green-600'
-                                                    : 'bg-yellow-100 text-yellow-600'
-                                                    }`}>
-                                                    {product.available_in_store ? 'Na Loja' : 'Aguardando'}
+                                                <div className="flex flex-col gap-1.5">
+                                                    {/* Badge de disponibilidade */}
+                                                    {product.available_in_store ? (
+                                                        <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-green-100 text-green-700 w-fit">
+                                                            🟢 Na Loja
+                                                        </span>
+                                                    ) : product.whatsapp_exclusive ? (
+                                                        <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-primary/10 text-primary w-fit">
+                                                            💬 Exclusivo WA
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-red-100 text-red-600 w-fit">
+                                                            🔴 Reservado
+                                                        </span>
+                                                    )}
+                                                    {/* Se for whatsapp_exclusive E indisponível (reservado em campanha) */}
+                                                    {product.whatsapp_exclusive && !product.available_in_store && (
+                                                        <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-black bg-red-50 text-red-500 w-fit">
+                                                            Reservado
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
