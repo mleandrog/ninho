@@ -28,11 +28,27 @@ export default function AdminSettingsPage() {
             const { data, error } = await supabase
                 .from("whatsapp_settings")
                 .select("*")
-                .limit(1)
-                .single();
+                .limit(1);
 
             if (error) throw error;
-            setSettings(data);
+
+            if (data && data.length > 0) {
+                setSettings(data[0]);
+            } else {
+                // Inicializa com valores padrão se não houver registro
+                setSettings({
+                    store_name: "Ninho Lar",
+                    whatsapp_number: "",
+                    keyword: "ninho",
+                    rules_message: "",
+                    final_message: "",
+                    default_interval_seconds: 30,
+                    cart_expiration_minutes: 60,
+                    payment_expiration_minutes: 1440,
+                    asaas_pix_enabled: true,
+                    asaas_card_enabled: false
+                });
+            }
         } catch (error: any) {
             toast.error("Erro ao carregar configurações: " + error.message);
         } finally {
@@ -43,37 +59,39 @@ export default function AdminSettingsPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const { error } = await supabase
-                .from("whatsapp_settings")
-                .update({
-                    store_name: settings.store_name,
-                    whatsapp_number: settings.whatsapp_number,
-                    keyword: settings.keyword,
-                    rules_message: settings.rules_message,
-                    final_message: settings.final_message,
-                    default_interval_seconds: settings.default_interval_seconds,
-                    cart_expiration_minutes: settings.cart_expiration_minutes,
-                    payment_expiration_minutes: settings.payment_expiration_minutes,
-                    asaas_pix_enabled: settings.asaas_pix_enabled,
-                    asaas_card_enabled: settings.asaas_card_enabled,
-                    store_lat: parseFloat(String(settings.store_lat).replace(',', '.')) || null,
-                    store_lng: parseFloat(String(settings.store_lng).replace(',', '.')) || null,
-                    store_address: settings.store_address,
-                    store_cep: settings.store_cep,
-                    bag_max_days: Number(settings.bag_max_days) || 30,
-                    bag_reminder_days: settings.bag_reminder_days || "15, 10, 7, 3",
-                    // Landing Page
-                    hero_title: settings.hero_title,
-                    hero_subtitle: settings.hero_subtitle,
-                    hero_badge_text: settings.hero_badge_text,
-                    promo_bar_text: settings.promo_bar_text,
-                    footer_phone: settings.footer_phone,
-                    footer_email: settings.footer_email,
-                    footer_about: settings.footer_about,
-                })
-                .eq("id", settings.id);
+            const configData = {
+                store_name: settings.store_name,
+                whatsapp_number: settings.whatsapp_number,
+                keyword: settings.keyword,
+                rules_message: settings.rules_message,
+                final_message: settings.final_message,
+                default_interval_seconds: settings.default_interval_seconds,
+                cart_expiration_minutes: settings.cart_expiration_minutes,
+                payment_expiration_minutes: settings.payment_expiration_minutes,
+                asaas_pix_enabled: settings.asaas_pix_enabled,
+                asaas_card_enabled: settings.asaas_card_enabled,
+                store_lat: parseFloat(String(settings.store_lat).replace(',', '.')) || null,
+                store_lng: parseFloat(String(settings.store_lng).replace(',', '.')) || null,
+                store_address: settings.store_address,
+                store_cep: settings.store_cep,
+                bag_max_days: Number(settings.bag_max_days) || 30,
+                bag_reminder_days: settings.bag_reminder_days || "15, 10, 7, 3",
+                hero_title: settings.hero_title,
+                hero_subtitle: settings.hero_subtitle,
+                hero_badge_text: settings.hero_badge_text,
+                promo_bar_text: settings.promo_bar_text,
+                footer_phone: settings.footer_phone,
+                footer_email: settings.footer_email,
+                footer_about: settings.footer_about,
+            };
+
+            const { data, error } = settings.id
+                ? await supabase.from("whatsapp_settings").update(configData).eq("id", settings.id).select().single()
+                : await supabase.from("whatsapp_settings").insert([configData]).select().single();
 
             if (error) throw error;
+            if (data) setSettings(data);
+
             toast.success("Configurações salvas com sucesso!");
         } catch (error: any) {
             toast.error("Erro ao salvar: " + error.message);
