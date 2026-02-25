@@ -138,33 +138,36 @@ export default function AdminClientesPage() {
         c.level ?? levels.find(l => l.name === 'normal') ?? null;
 
     return (
-        <div className="min-h-screen bg-soft flex">
-            <AdminSidebar />
-            <main className="flex-1 p-12 overflow-y-auto">
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-                    <div>
-                        <h1 className="text-4xl font-black text-muted-text lowercase tracking-tighter">Clientes</h1>
-                        <p className="text-gray-400 font-bold mt-1">{customers.length} clientes cadastrados</p>
-                    </div>
-                </header>
+        <div className="animate-in fade-in duration-500">
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
+                <div>
+                    <h1 className="text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">Clientes</h1>
+                    <p className="text-gray-400 font-bold mt-1">{customers.length} clientes cadastrados</p>
+                </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-8">
+                <div className="flex bg-white p-1.5 rounded-2xl lg:rounded-[2rem] shadow-premium border border-white gap-1 transition-all w-full lg:w-auto overflow-x-auto">
                     {(['clientes', 'niveis'] as const).map(t => (
                         <button
                             key={t}
                             onClick={() => setTab(t)}
-                            className={`px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest transition-all ${tab === t ? 'bg-primary text-white shadow-vibrant' : 'bg-white text-gray-400 hover:text-muted-text'}`}
+                            className={clsx(
+                                "px-6 lg:px-8 py-3 rounded-xl lg:rounded-[1.5rem] flex items-center justify-center gap-2 lg:gap-3 transition-all font-black text-[10px] lg:text-xs uppercase tracking-widest flex-1 lg:flex-none whitespace-nowrap",
+                                tab === t ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-muted-text hover:bg-soft"
+                            )}
                         >
-                            {t === 'clientes' ? <><Users size={16} className="inline mr-2" />Clientes</> : <><Shield size={16} className="inline mr-2" />Níveis</>}
+                            {t === 'clientes' ? <Users size={16} /> : <Shield size={16} />}
+                            {t === 'clientes' ? "Clientes" : "Níveis"}
                         </button>
                     ))}
                 </div>
+            </header>
 
-                {/* ======= ABA CLIENTES ======= */}
-                {tab === 'clientes' && (
-                    <div className="bg-white rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
-                        <div className="p-6 border-b border-gray-50 flex flex-col md:flex-row gap-4">
+            {/* ======= ABA CLIENTES ======= */}
+            {tab === 'clientes' && (
+                <div className="animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="bg-white p-6 rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white mb-8">
+                        <div className="flex flex-col sm:flex-row gap-4">
                             <div className="relative flex-1">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                 <input
@@ -172,67 +175,72 @@ export default function AdminClientesPage() {
                                     placeholder="Buscar por nome ou telefone..."
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-soft rounded-2xl font-medium text-muted-text border-none focus:ring-2 focus:ring-primary/20"
+                                    className="w-full pl-11 pr-4 py-3 bg-soft rounded-2xl font-bold text-sm text-muted-text border-none focus:ring-2 focus:ring-primary/20 outline-none"
                                 />
                             </div>
-                            <select
-                                value={filterLevel}
-                                onChange={e => setFilterLevel(e.target.value)}
-                                className="px-4 py-3 rounded-2xl bg-soft font-bold text-gray-500 border-none"
-                            >
-                                <option value="">Todos os níveis</option>
-                                {levels.map(l => (
-                                    <option key={l.id} value={l.id}>{l.label}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                <select
+                                    value={filterLevel}
+                                    onChange={e => setFilterLevel(e.target.value)}
+                                    className="w-full sm:w-auto pl-6 pr-10 py-3 rounded-2xl bg-soft font-black text-[10px] uppercase tracking-widest text-gray-500 border-none appearance-none cursor-pointer outline-none"
+                                >
+                                    <option value="">Todos os níveis</option>
+                                    {levels.map(l => (
+                                        <option key={l.id} value={l.id}>{l.label}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
+                    </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
+                    <div className="bg-white rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
+                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
+                            <table className="w-full text-left min-w-[800px]">
                                 <thead>
                                     <tr className="bg-soft/50">
-                                        <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Cliente</th>
-                                        <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Telefone</th>
-                                        <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Nível</th>
-                                        <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Cadastro</th>
-                                        <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
+                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Cliente</th>
+                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Telefone</th>
+                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Nível</th>
+                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Cadastro</th>
+                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {loading ? (
-                                        <tr><td colSpan={5} className="text-center py-20 text-gray-400 font-bold animate-pulse">Carregando...</td></tr>
+                                        <tr><td colSpan={5} className="text-center py-20 text-gray-400 font-bold animate-pulse">Carregando clientes...</td></tr>
                                     ) : filtered.length === 0 ? (
                                         <tr><td colSpan={5} className="text-center py-20 text-gray-400 font-bold">Nenhum cliente encontrado.</td></tr>
                                     ) : filtered.map(c => {
                                         const lvl = getLevelForCustomer(c);
                                         return (
                                             <tr key={c.id} className="hover:bg-soft/30 transition-colors group">
-                                                <td className="px-8 py-5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm" style={{ backgroundColor: lvl?.color || '#6B7280' }}>
+                                                <td className="px-6 lg:px-8 py-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm" style={{ backgroundColor: lvl?.color || '#6B7280' }}>
                                                             {(c.full_name || '?')[0]?.toUpperCase()}
                                                         </div>
                                                         <span className="font-black text-muted-text">{c.full_name || 'Sem nome'}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-5 text-gray-500 font-bold">{c.phone || '—'}</td>
-                                                <td className="px-8 py-5">
+                                                <td className="px-6 lg:px-8 py-6 text-gray-500 font-bold text-sm tracking-tight">{c.phone || '—'}</td>
+                                                <td className="px-6 lg:px-8 py-6">
                                                     <span
-                                                        className="inline-block px-3 py-1 rounded-xl text-xs font-black uppercase tracking-widest text-white"
+                                                        className="inline-block px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-sm"
                                                         style={{ backgroundColor: lvl?.color || '#6B7280' }}
                                                     >
                                                         {lvl?.label || 'Normal'}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-gray-400 font-bold text-sm">
+                                                <td className="px-6 lg:px-8 py-6 text-gray-400 font-bold text-xs text-center">
                                                     {new Date(c.created_at).toLocaleDateString('pt-BR')}
                                                 </td>
-                                                <td className="px-8 py-5 text-center">
+                                                <td className="px-6 lg:px-8 py-6 text-center">
                                                     <button
                                                         onClick={() => { setEditingCustomer(c); setSelectedLevelId(c.customer_level_id || ''); }}
-                                                        className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all"
+                                                        className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
                                                     >
-                                                        <Edit2 size={16} />
+                                                        <Edit2 size={18} />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -242,84 +250,97 @@ export default function AdminClientesPage() {
                             </table>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* ======= ABA NÍVEIS ======= */}
-                {tab === 'niveis' && (
-                    <div>
-                        <div className="flex justify-end mb-6">
-                            <Button
-                                onClick={() => { setEditingLevel(null); setLevelForm({ name: '', label: '', color: '#6B7280' }); setShowLevelModal(true); }}
-                                className="h-13 px-8 rounded-2xl gap-3 shadow-vibrant"
-                            >
-                                <Plus size={18} /> Novo Nível
-                            </Button>
-                        </div>
+            {/* ======= ABA NÍVEIS ======= */}
+            {tab === 'niveis' && (
+                <div className="animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-xl font-black text-muted-text lowercase tracking-tighter">configuração de níveis</h2>
+                        <Button
+                            onClick={() => { setEditingLevel(null); setLevelForm({ name: '', label: '', color: '#6B7280' }); setShowLevelModal(true); }}
+                            className="h-12 px-6 rounded-2xl gap-3 shadow-vibrant font-black text-xs uppercase tracking-widest"
+                        >
+                            <Plus size={18} /> Novo Nível
+                        </Button>
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {levels.map(lvl => {
-                                const count = customers.filter(c => c.customer_level_id === lvl.id).length;
-                                return (
-                                    <div key={lvl.id} className="bg-white rounded-3xl p-6 shadow-premium border border-white">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-2xl" style={{ backgroundColor: lvl.color }} />
-                                                <div>
-                                                    <p className="font-black text-muted-text">{lvl.label}</p>
-                                                    <code className="text-xs text-gray-400">{lvl.name}</code>
-                                                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {levels.map(lvl => {
+                            const count = customers.filter(c => c.customer_level_id === lvl.id).length;
+                            return (
+                                <div key={lvl.id} className="bg-white rounded-[2rem] p-6 shadow-premium border border-white hover:border-primary/20 transition-all group">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl shadow-sm" style={{ backgroundColor: lvl.color }} />
+                                            <div>
+                                                <p className="font-black text-muted-text uppercase tracking-wider">{lvl.label}</p>
+                                                <code className="text-[10px] text-gray-400 font-bold bg-soft px-1.5 py-0.5 rounded-lg">{lvl.name}</code>
                                             </div>
-                                            <span className="text-2xl font-black text-primary">{count}</span>
                                         </div>
-                                        <p className="text-xs text-gray-400 font-bold mb-4">{count} cliente{count !== 1 ? 's' : ''}</p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => { setEditingLevel(lvl); setLevelForm({ name: lvl.name, label: lvl.label, color: lvl.color }); setShowLevelModal(true); }}
-                                                className="flex-1 py-2 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all font-bold text-sm"
-                                            >
-                                                <Edit2 size={14} className="inline mr-1" /> Editar
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteLevel(lvl)}
-                                                className="flex-1 py-2 bg-soft text-gray-500 rounded-xl hover:bg-red-500 hover:text-white transition-all font-bold text-sm"
-                                            >
-                                                <Trash2 size={14} className="inline mr-1" /> Excluir
-                                            </button>
+                                        <div className="text-right">
+                                            <span className="text-3xl font-black text-primary leading-none">{count}</span>
+                                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">membros</p>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => { setEditingLevel(lvl); setLevelForm({ name: lvl.name, label: lvl.label, color: lvl.color }); setShowLevelModal(true); }}
+                                            className="flex-1 py-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all font-black text-xs uppercase tracking-widest"
+                                        >
+                                            <Edit2 size={14} className="inline mr-2" /> Editar
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteLevel(lvl)}
+                                            className="flex-1 py-3 bg-soft text-gray-500 rounded-xl hover:bg-red-500 hover:text-white transition-all font-black text-xs uppercase tracking-widest"
+                                        >
+                                            <Trash2 size={14} className="inline mr-2" />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                )}
-            </main>
+                </div>
+            )}
 
             {/* Modal Editar Nível do Cliente */}
             {editingCustomer && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-muted-text">Alterar Nível</h2>
-                            <button onClick={() => setEditingCustomer(null)} className="p-2 hover:bg-soft rounded-xl"><X size={22} /></button>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white sm:rounded-[3rem] p-6 lg:p-10 w-full max-w-sm h-full sm:h-auto overflow-y-auto shadow-2xl relative">
+                        <div className="flex justify-between items-center mb-8 sticky top-0 bg-white z-10 pb-2">
+                            <div>
+                                <h2 className="text-2xl font-black text-muted-text">Alterar Nível</h2>
+                                <p className="text-gray-400 font-bold text-xs mt-1">{editingCustomer.full_name || 'Cliente'}</p>
+                            </div>
+                            <button onClick={() => setEditingCustomer(null)} className="p-2 hover:bg-soft rounded-xl transition-colors"><X size={24} /></button>
                         </div>
-                        <p className="text-gray-500 font-bold mb-6">{editingCustomer.full_name || 'Cliente'}</p>
-                        <div className="space-y-3 mb-8">
-                            {levels.map(l => (
+
+                        <div className="space-y-3 mb-10">
+                            {[{ id: '', label: 'Sem Nível', color: '#6B7280' }, ...levels].map(l => (
                                 <button
                                     key={l.id}
                                     onClick={() => setSelectedLevelId(l.id)}
-                                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${selectedLevelId === l.id ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
+                                    className={clsx(
+                                        "w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group",
+                                        selectedLevelId === l.id ? 'border-primary bg-primary/5' : 'border-gray-50 hover:border-gray-100'
+                                    )}
                                 >
-                                    <div className="w-6 h-6 rounded-full" style={{ backgroundColor: l.color }} />
-                                    <span className="font-black text-muted-text">{l.label}</span>
-                                    {selectedLevelId === l.id && <span className="ml-auto text-primary">✓</span>}
+                                    <div className="w-8 h-8 rounded-xl shadow-sm shrink-0" style={{ backgroundColor: l.color }} />
+                                    <span className={clsx("font-black text-sm uppercase tracking-widest", selectedLevelId === l.id ? "text-primary" : "text-muted-text")}>
+                                        {l.label}
+                                    </span>
+                                    {selectedLevelId === l.id && <div className="ml-auto w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white"><span className="text-xs">✓</span></div>}
                                 </button>
                             ))}
                         </div>
-                        <div className="flex gap-3">
-                            <Button variant="outline" className="flex-1 h-13 rounded-2xl" onClick={() => setEditingCustomer(null)} disabled={saving}>Cancelar</Button>
-                            <Button className="flex-1 h-13 rounded-2xl shadow-vibrant" onClick={handleSaveCustomerLevel} disabled={saving}>
-                                {saving ? <Loader2 size={18} className="animate-spin" /> : 'Salvar'}
+
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Button variant="outline" className="h-14 rounded-2xl font-black text-xs uppercase tracking-widest" onClick={() => setEditingCustomer(null)} disabled={saving}>Cancelar</Button>
+                            <Button className="flex-1 h-14 rounded-2xl shadow-vibrant font-black text-xs uppercase tracking-widest" onClick={handleSaveCustomerLevel} disabled={saving}>
+                                {saving ? <Loader2 size={18} className="animate-spin" /> : 'Salvar Nível'}
                             </Button>
                         </div>
                     </div>
@@ -328,13 +349,14 @@ export default function AdminClientesPage() {
 
             {/* Modal Criar/Editar Nível */}
             {showLevelModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl">
-                        <div className="flex justify-between items-center mb-8">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white sm:rounded-[3rem] p-6 lg:p-10 w-full max-w-sm h-full sm:h-auto overflow-y-auto shadow-2xl relative">
+                        <div className="flex justify-between items-center mb-8 sticky top-0 bg-white z-10 pb-2">
                             <h2 className="text-2xl font-black text-muted-text">{editingLevel ? 'Editar Nível' : 'Novo Nível'}</h2>
-                            <button onClick={() => setShowLevelModal(false)} className="p-2 hover:bg-soft rounded-xl"><X size={22} /></button>
+                            <button onClick={() => setShowLevelModal(false)} className="p-2 hover:bg-soft rounded-xl transition-colors"><X size={24} /></button>
                         </div>
-                        <div className="space-y-5">
+
+                        <div className="space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Nome do Nível</label>
                                 <input
@@ -342,31 +364,37 @@ export default function AdminClientesPage() {
                                     placeholder="Ex: Ouro, Diamante, VIP..."
                                     value={levelForm.label}
                                     onChange={e => setLevelForm(f => ({ ...f, label: e.target.value, name: generateName(e.target.value) }))}
-                                    className="w-full p-4 bg-soft rounded-2xl font-bold text-muted-text border-none"
+                                    className="w-full p-4 bg-soft rounded-2xl font-bold text-muted-text border-none focus:ring-2 focus:ring-primary/20 outline-none"
                                 />
                             </div>
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Cor do Badge</label>
                                 <div className="flex items-center gap-4">
-                                    <input
-                                        type="color"
-                                        value={levelForm.color}
-                                        onChange={e => setLevelForm(f => ({ ...f, color: e.target.value }))}
-                                        className="w-14 h-14 rounded-2xl border-none cursor-pointer bg-soft p-1"
-                                    />
-                                    <span
-                                        className="px-4 py-2 rounded-xl text-white font-black text-sm"
-                                        style={{ backgroundColor: levelForm.color }}
-                                    >
-                                        {levelForm.label || 'Preview'}
-                                    </span>
+                                    <div className="relative">
+                                        <input
+                                            type="color"
+                                            value={levelForm.color}
+                                            onChange={e => setLevelForm(f => ({ ...f, color: e.target.value }))}
+                                            className="w-14 h-14 rounded-2xl border-none cursor-pointer bg-soft p-1"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div
+                                            className="px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-sm text-center"
+                                            style={{ backgroundColor: levelForm.color }}
+                                        >
+                                            {levelForm.label || 'Preview'}
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 font-bold mt-1 text-center font-mono uppercase">{levelForm.color}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex gap-3 mt-8">
-                            <Button variant="outline" className="flex-1 h-13 rounded-2xl" onClick={() => setShowLevelModal(false)} disabled={savingLevel}>Cancelar</Button>
-                            <Button className="flex-1 h-13 rounded-2xl shadow-vibrant" onClick={handleSaveLevel} disabled={savingLevel || !levelForm.label}>
-                                {savingLevel ? <Loader2 size={18} className="animate-spin" /> : (editingLevel ? 'Atualizar' : 'Criar')}
+
+                        <div className="flex flex-col sm:flex-row gap-4 mt-10">
+                            <Button variant="outline" className="h-14 rounded-2xl font-black text-xs uppercase tracking-widest" onClick={() => setShowLevelModal(false)} disabled={savingLevel}>Cancelar</Button>
+                            <Button className="flex-1 h-14 rounded-2xl shadow-vibrant font-black text-xs uppercase tracking-widest" onClick={handleSaveLevel} disabled={savingLevel || !levelForm.label}>
+                                {savingLevel ? <Loader2 size={18} className="animate-spin" /> : (editingLevel ? 'Atualizar' : 'Criar Nível')}
                             </Button>
                         </div>
                     </div>

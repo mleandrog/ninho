@@ -14,7 +14,8 @@ import {
     MessageSquare,
     Truck,
     Users,
-    MapPin
+    MapPin,
+    X
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -31,17 +32,28 @@ const menuItems = [
     { icon: Settings, label: "Configurações", href: "/admin/configuracoes" },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ onClose }: { onClose?: () => void }) {
     const pathname = usePathname();
 
     return (
-        <aside className="w-80 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 overflow-y-auto">
+        <aside className="w-80 bg-white border-r border-gray-100 flex flex-col h-screen overflow-y-auto">
             <div className="p-8">
-                <div className="flex items-center gap-3 mb-12">
-                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-vibrant">
-                        N
+                <div className="flex items-center justify-between mb-12">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-vibrant">
+                            N
+                        </div>
+                        <span className="text-2xl font-black text-muted-text tracking-tight">Admin<span className="text-primary">Lar</span></span>
                     </div>
-                    <span className="text-2xl font-black text-muted-text tracking-tight">Admin<span className="text-primary">Lar</span></span>
+                    {/* Botão para fechar no mobile */}
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="lg:hidden p-2 text-gray-400 hover:text-muted-text hover:bg-soft rounded-xl transition-all"
+                        >
+                            <X size={24} />
+                        </button>
+                    )}
                 </div>
 
                 <nav className="space-y-2">
@@ -51,6 +63,7 @@ export function AdminSidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                onClick={() => onClose?.()}
                                 className={clsx(
                                     "flex items-center justify-between px-6 py-4 rounded-2xl font-bold transition-all group",
                                     isActive

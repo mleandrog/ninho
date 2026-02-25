@@ -312,168 +312,159 @@ export default function AdminProductsPage() {
     );
 
     return (
-        <div className="min-h-screen bg-soft flex">
-            <AdminSidebar />
+        <div className="animate-in fade-in duration-500">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10 lg:mb-12">
+                <div>
+                    <h1 className="text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">Produtos</h1>
+                    <p className="text-gray-400 font-bold mt-1">{products.length} itens cadastrados no catálogo</p>
+                </div>
+                <Button
+                    className="w-full sm:w-auto h-14 px-8 rounded-2xl gap-3 shadow-vibrant"
+                    onClick={() => {
+                        resetForm();
+                        setShowModal(true);
+                    }}
+                >
+                    <Plus size={20} />
+                    Novo Produto
+                </Button>
+            </header>
 
-            <main className="flex-1 p-12 overflow-y-auto">
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-                    <div>
-                        <h1 className="text-4xl font-black text-muted-text lowercase tracking-tighter">Produtos</h1>
-                        <p className="text-gray-400 font-bold mt-1">{products.length} itens cadastrados no catálogo</p>
+            <div className="bg-white rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
+                <div className="p-6 lg:p-8 border-b border-gray-50 space-y-4">
+                    <div className="relative max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Buscar produto por nome..."
+                            className="w-full pl-12 pr-6 py-4 bg-soft rounded-2xl border-none focus:ring-2 focus:ring-primary/20 font-medium text-muted-text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
-                    <Button
-                        className="h-14 px-8 rounded-2xl gap-3 shadow-vibrant"
-                        onClick={() => {
-                            resetForm();
-                            setShowModal(true);
-                        }}
-                    >
-                        <Plus size={20} />
-                        Novo Produto
-                    </Button>
-                </header>
-
-                <div className="bg-white rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
-                    <div className="p-8 border-b border-gray-50 space-y-4">
-                        <div className="relative max-w-md">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Buscar produto por nome..."
-                                className="w-full pl-12 pr-6 py-4 bg-soft rounded-2xl border-none focus:ring-2 focus:ring-primary/20 font-medium text-muted-text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                    {/* Legenda dos status */}
+                    <div className="flex flex-wrap items-center gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                        <Info size={16} className="text-blue-500 shrink-0" />
+                        <span className="text-xs font-black text-blue-700 uppercase tracking-widest">Legenda:</span>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-green-100 text-green-700">🟢 Na Loja</span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-red-100 text-red-700">🔴 Reservado</span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-primary/10 text-primary">💬 Exclusivo WA</span>
                         </div>
-                        {/* Legenda dos status */}
-                        <div className="flex flex-wrap items-center gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                            <Info size={16} className="text-blue-500 shrink-0" />
-                            <span className="text-xs font-black text-blue-700 uppercase tracking-widest">Legenda:</span>
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-green-100 text-green-700">🟢 Na Loja — disponível para compra pública</span>
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-red-100 text-red-700">🔴 Reservado — reservado por cliente na campanha, aguardando pagamento</span>
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-primary/10 text-primary">💬 Exclusivo WA — só aparece em campanhas WhatsApp, nunca na loja pública</span>
-                        </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-soft/50">
-                                    <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Produto</th>
-                                    <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Tamanho</th>
-                                    <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Categoria</th>
-                                    <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Preço</th>
-                                    <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                    <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-8 py-20 text-center font-bold text-gray-400 animate-pulse">
-                                            Carregando inventário...
-                                        </td>
-                                    </tr>
-                                ) : filteredProducts.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-8 py-20 text-center font-bold text-gray-400">
-                                            Nenhum produto encontrado.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredProducts.map((product) => (
-                                        <tr key={product.id} className="hover:bg-soft/30 transition-colors">
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-16 h-16 rounded-xl bg-soft flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm">
-                                                        {product.image_url ? (
-                                                            <img
-                                                                src={product.image_url}
-                                                                alt={product.name}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <ImageIcon className="text-gray-300" size={24} />
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-black text-muted-text">{product.name}</div>
-                                                        {product.whatsapp_exclusive && (
-                                                            <div className="flex items-center gap-1 mt-1 text-xs font-bold text-primary">
-                                                                <MessageSquare size={12} />
-                                                                Exclusivo WhatsApp
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                {product.size ? (
-                                                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-black bg-primary/10 text-primary">{product.size}</span>
-                                                ) : (
-                                                    <span className="text-gray-300 font-bold text-xs">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-8 py-6 font-bold text-gray-500">
-                                                {product.categories?.name || "Sem categoria"}
-                                            </td>
-                                            <td className="px-8 py-6 font-black text-muted-text">
-                                                R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col gap-1.5">
-                                                    {/* Badge de disponibilidade */}
-                                                    {product.available_in_store ? (
-                                                        <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-green-100 text-green-700 w-fit">
-                                                            🟢 Na Loja
-                                                        </span>
-                                                    ) : product.whatsapp_exclusive ? (
-                                                        <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-primary/10 text-primary w-fit">
-                                                            💬 Exclusivo WA
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-red-100 text-red-600 w-fit">
-                                                            🔴 Reservado
-                                                        </span>
-                                                    )}
-                                                    {/* Se for whatsapp_exclusive E indisponível (reservado em campanha) */}
-                                                    {product.whatsapp_exclusive && !product.available_in_store && (
-                                                        <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-black bg-red-50 text-red-500 w-fit">
-                                                            Reservado
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex justify-center gap-2">
-                                                    <button
-                                                        onClick={() => handleEdit(product)}
-                                                        className="p-2 hover:bg-soft rounded-xl transition-colors"
-                                                    >
-                                                        <Edit2 size={18} className="text-gray-400" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(product.id)}
-                                                        className="p-2 hover:bg-red-50 rounded-xl transition-colors"
-                                                    >
-                                                        <Trash2 size={18} className="text-red-400" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
                     </div>
                 </div>
-            </main>
+
+                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr className="bg-soft/50">
+                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Produto</th>
+                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Tamanho</th>
+                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Categoria</th>
+                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Preço</th>
+                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={6} className="px-8 py-20 text-center font-bold text-gray-400 animate-pulse">
+                                        Carregando inventário...
+                                    </td>
+                                </tr>
+                            ) : filteredProducts.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-8 py-20 text-center font-bold text-gray-400">
+                                        Nenhum produto encontrado.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredProducts.map((product) => (
+                                    <tr key={product.id} className="hover:bg-soft/30 transition-colors">
+                                        <td className="px-6 lg:px-8 py-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-xl bg-soft flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm shrink-0">
+                                                    {product.image_url ? (
+                                                        <img
+                                                            src={product.image_url}
+                                                            alt={product.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <ImageIcon className="text-gray-300" size={24} />
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="font-black text-muted-text truncate">{product.name}</div>
+                                                    {product.whatsapp_exclusive && (
+                                                        <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-primary">
+                                                            <MessageSquare size={10} />
+                                                            Exclusivo WhatsApp
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 lg:px-8 py-6">
+                                            {product.size ? (
+                                                <span className="inline-flex px-3 py-1 rounded-full text-xs font-black bg-primary/10 text-primary">{product.size}</span>
+                                            ) : (
+                                                <span className="text-gray-300 font-bold text-xs">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 lg:px-8 py-6 font-bold text-gray-500">
+                                            {product.categories?.name || "Sem categoria"}
+                                        </td>
+                                        <td className="px-6 lg:px-8 py-6 font-black text-muted-text">
+                                            R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-6 lg:px-8 py-6">
+                                            <div className="flex flex-col gap-1.5">
+                                                {product.available_in_store ? (
+                                                    <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-green-100 text-green-700 w-fit">
+                                                        🟢 Na Loja
+                                                    </span>
+                                                ) : product.whatsapp_exclusive ? (
+                                                    <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-primary/10 text-primary w-fit">
+                                                        💬 Exclusivo WA
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-red-100 text-red-600 w-fit">
+                                                        🔴 Reservado
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 lg:px-8 py-6">
+                                            <div className="flex justify-center gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(product)}
+                                                    className="p-2 hover:bg-soft rounded-xl transition-colors"
+                                                >
+                                                    <Edit2 size={18} className="text-gray-400" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(product.id)}
+                                                    className="p-2 hover:bg-red-50 rounded-xl transition-colors"
+                                                >
+                                                    <Trash2 size={18} className="text-red-400" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-[3rem] p-10 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl font-black text-muted-text">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4 backdrop-blur-sm">
+                    <div className="bg-white sm:rounded-[3rem] p-6 lg:p-10 w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto shadow-2xl relative">
+                        <div className="flex justify-between items-center mb-8 sticky top-0 bg-white z-10 pb-2">
+                            <h2 className="text-2xl lg:text-3xl font-black text-muted-text">
                                 {editingProduct ? "Editar Produto" : "Novo Produto"}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-soft rounded-xl transition-colors">
@@ -482,7 +473,7 @@ export default function AdminProductsPage() {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                                 <div className="space-y-6">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome do Produto</label>
@@ -530,7 +521,7 @@ export default function AdminProductsPage() {
                                                     key={s}
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, size: s })}
-                                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${formData.size === s
+                                                    className={`px-3 py-2 lg:px-4 lg:py-2 rounded-xl font-black text-sm transition-all ${formData.size === s
                                                         ? 'bg-primary text-white shadow-sm'
                                                         : 'bg-soft text-gray-500 hover:bg-primary/10'
                                                         }`}
@@ -567,7 +558,7 @@ export default function AdminProductsPage() {
                                         ) : (
                                             <>
                                                 <Upload className="text-gray-300 mb-2 group-hover:text-primary transition-colors" size={40} />
-                                                <p className="text-xs font-bold text-gray-400">Clique para selecionar</p>
+                                                <p className="text-xs font-bold text-gray-400 text-center px-4">Clique para selecionar</p>
                                             </>
                                         )}
                                     </div>
@@ -590,7 +581,7 @@ export default function AdminProductsPage() {
                                 />
                             </div>
 
-                            <div className="grid md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="flex items-center justify-between p-4 bg-soft rounded-2xl">
                                     <div>
                                         <div className="font-black text-muted-text text-sm">Em Destaque</div>
@@ -623,8 +614,8 @@ export default function AdminProductsPage() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 pt-4">
-                                <Button type="button" variant="outline" className="flex-1 h-14 rounded-2xl font-black lowercase" onClick={() => setShowModal(false)} disabled={uploading}>
+                            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                                <Button type="button" variant="outline" className="h-14 rounded-2xl font-black lowercase" onClick={() => setShowModal(false)} disabled={uploading}>
                                     Cancelar
                                 </Button>
                                 <Button type="submit" className="flex-1 h-14 rounded-2xl shadow-vibrant font-black lowercase gap-2" disabled={uploading}>
