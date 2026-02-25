@@ -40,8 +40,14 @@ export default function AdminSettingsPage() {
                     store_name: "Ninho Lar",
                     whatsapp_number: "",
                     keyword: "ninho",
-                    rules_message: "",
-                    final_message: "",
+                    rules_message: `🛍️ *REGRAS DO GRUPO*
+                    
+✨ 1. Os produtos são postados diariamente.
+🎉 2. Para comprar, responda "EU QUERO" ou envie a palavra-chave.
+🐥 3. Reservas duram 24h.`,
+                    final_message: `✅ *Obrigado pela preferência!*
+                    
+Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em contato para finalizar o pagamento e entrega! 💙`,
                     default_interval_seconds: 30,
                     cart_expiration_minutes: 60,
                     payment_expiration_minutes: 1440,

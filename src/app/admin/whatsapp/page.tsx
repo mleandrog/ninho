@@ -1066,7 +1066,7 @@ export default function AdminWhatsAppDashboard() {
                                     <div className="flex items-center gap-1.5"><Calendar size={12} /> Data e Hora do Disparo</div>
                                     {serverTime && (
                                         <span className="text-primary normal-case">
-                                            Horário do servidor: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                            Horário do servidor: {serverTime}
                                         </span>
                                     )}
                                 </label>
