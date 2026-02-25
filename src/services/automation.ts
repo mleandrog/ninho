@@ -1,6 +1,7 @@
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { evolutionService } from "@/services/evolution";
 import { queueService } from "@/services/queue";
+import { orderService } from "@/services/orders";
 
 export const automationService = {
     /**
@@ -49,6 +50,54 @@ export const automationService = {
         }
 
         console.log('[Automation] processQueueExpirations concluído.');
+    },
+
+    /**
+     * Verifica pedidos 'pending' que já passaram do prazo de pagamento.
+     * Cancela o pedido e devolve os itens ao estoque.
+     */
+    async processOrderExpirations() {
+        console.log('[Automation] Verificando pedidos pendentes expirados...');
+
+        // Buscar configurações para saber o tempo de expiração do pagamento (Asaas)
+        const { data: settings } = await supabase
+            .from('whatsapp_settings')
+            .select('payment_expiration_minutes')
+            .limit(1)
+            .single();
+
+        const expirationMinutes = settings?.payment_expiration_minutes || 60;
+        // Adicionamos uma margem de segurança de 5 minutos sobre o prazo do Asaas
+        const cutoff = new Date(Date.now() - (expirationMinutes + 5) * 60 * 1000).toISOString();
+
+        // Buscar pedidos 'pending' com payment_status 'pending' criados antes do cutoff
+        const { data: expiredOrders, error } = await supabase
+            .from('orders')
+            .select('id, order_number')
+            .eq('status', 'pending')
+            .eq('payment_status', 'pending')
+            .lt('created_at', cutoff);
+
+        if (error) {
+            console.error('[Automation] Erro ao buscar pedidos expirados:', error);
+            return;
+        }
+
+        if (!expiredOrders || expiredOrders.length === 0) {
+            console.log('[Automation] Nenhum pedido expirado encontrado.');
+            return;
+        }
+
+        console.log(`[Automation] ${expiredOrders.length} pedido(s) expirado(s) encontrado(s). Cancelando...`);
+
+        for (const order of expiredOrders) {
+            try {
+                await orderService.cancelOrder(order.id, 'automatic_expiration');
+                console.log(`[Automation] Pedido ${order.order_number} (#${order.id}) cancelado por expiração.`);
+            } catch (err) {
+                console.error(`[Automation] Erro ao cancelar pedido ${order.id}:`, err);
+            }
+        }
     },
 
     /**

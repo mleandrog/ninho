@@ -23,8 +23,8 @@ cp .env.local .next/standalone/.env
 cp -rf public .next/standalone/public
 cp -rf .next/static .next/standalone/.next/static
 
-# 6. Recriar o processo PM2 (use delete + start, não restart)
-pm2 delete ninho-lar
+# 6. Recriar o processo PM2 (use delete + start para garantir limpeza total)
+pm2 delete ninho-lar || true
 pm2 start .next/standalone/server.js --name ninho-lar
 pm2 save
 ```

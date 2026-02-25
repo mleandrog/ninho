@@ -15,6 +15,7 @@ export async function GET(req: Request) {
     try {
         // Executar automações
         await automationService.processQueueExpirations();
+        await automationService.processOrderExpirations();
         await automationService.processBagAlerts();
 
         return NextResponse.json({

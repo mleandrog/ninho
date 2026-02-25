@@ -80,9 +80,22 @@ export default function AdminOrdersPage() {
 
     const updateStatus = async (id: string, newStatus: string) => {
         try {
-            const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", id);
-            if (error) throw error;
-            toast.success("Status atualizado!");
+            if (newStatus === 'canceled') {
+                const res = await fetch("/api/admin/orders/cancel", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderId: id }),
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || "Erro ao cancelar pedido");
+                }
+            } else {
+                const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", id);
+                if (error) throw error;
+            }
+
+            toast.success(newStatus === 'canceled' ? "Pedido cancelado e estoque devolvido!" : "Status atualizado!");
             setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
         } catch (err: any) {
             toast.error("Erro ao atualizar: " + err.message);
