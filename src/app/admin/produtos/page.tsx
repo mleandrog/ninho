@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/Button";
 import { Plus, Search, Edit2, Trash2, X, MessageSquare, Upload, Loader2, Image as ImageIcon, Info } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -28,6 +27,7 @@ export default function AdminProductsPage() {
         is_featured: false,
         whatsapp_exclusive: false,
         size: "",
+        available_in_store: true,
     });
     const [customSize, setCustomSize] = useState("");
 
@@ -215,7 +215,7 @@ export default function AdminProductsPage() {
             const productData = {
                 ...formData,
                 image_url: finalImageUrl,
-                available_in_store: !formData.whatsapp_exclusive,
+                available_in_store: formData.available_in_store,
                 whatsapp_campaign_completed: false,
                 size: formData.size === 'Outros' ? customSize : formData.size,
             };
@@ -257,6 +257,7 @@ export default function AdminProductsPage() {
             is_featured: product.is_featured || false,
             whatsapp_exclusive: product.whatsapp_exclusive || false,
             size: isCustom ? 'Outros' : (product.size || ''),
+            available_in_store: product.available_in_store ?? true,
         });
         if (isCustom) setCustomSize(product.size);
         setImagePreview(product.image_url || "");
@@ -300,6 +301,7 @@ export default function AdminProductsPage() {
             is_featured: false,
             whatsapp_exclusive: false,
             size: "",
+            available_in_store: true,
         });
         setCustomSize("");
         setImagePreview("");
@@ -593,6 +595,20 @@ export default function AdminProductsPage() {
                                         className={`w-10 h-5 rounded-full relative transition-colors ${formData.is_featured ? 'bg-primary' : 'bg-gray-300'}`}
                                     >
                                         <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${formData.is_featured ? 'right-0.5' : 'left-0.5'}`} />
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-soft rounded-2xl">
+                                    <div>
+                                        <div className="font-black text-muted-text text-sm">Disponível</div>
+                                        <div className="text-[10px] text-gray-400 font-bold">Visível na loja / WhatsApp</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, available_in_store: !formData.available_in_store })}
+                                        className={`w-10 h-5 rounded-full relative transition-colors ${formData.available_in_store ? 'bg-green-500' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${formData.available_in_store ? 'right-0.5' : 'left-0.5'}`} />
                                     </button>
                                 </div>
 

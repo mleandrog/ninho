@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { KPICard } from "@/components/admin/KPICard";
 import { supabase } from "@/lib/supabase";
 import { clsx } from "clsx";

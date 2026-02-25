@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { toast } from "react-hot-toast";
 import {
     Clock, CheckCircle, Truck, AlertCircle, Eye,
@@ -62,13 +61,13 @@ export default function AdminOrdersPage() {
             const { data, error } = await supabase
                 .from("bags")
                 .select(`
-                    *, 
-                    profiles:customer_id(full_name),
-                    bag_items(
+    *,
+    profiles: customer_id(full_name),
+        bag_items(
                         *,
-                        product:product_id(name, image_url, price)
-                    )
-                `)
+            product: product_id(name, image_url, price)
+        )
+            `)
                 .order("created_at", { ascending: false });
             if (error) throw error;
             setBags(data || []);
@@ -150,7 +149,7 @@ export default function AdminOrdersPage() {
     const hasFilters = search || filterStatus || filterFrom || filterTo;
 
     return (
-        <div className="animate-in fade-in duration-500">
+        <div className="flex flex-col flex-1 animate-in fade-in duration-500">
             {/* Header */}
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">
@@ -332,8 +331,8 @@ export default function AdminOrdersPage() {
                                         </span>
                                         <span className="font-black text-muted-text">
                                             {activeTab === "pedidos"
-                                                ? `#${item.order_number || item.id.slice(0, 8).toUpperCase()}`
-                                                : `#${item.id.slice(0, 8).toUpperCase()}`}
+                                                ? `#${item.order_number || item.id.slice(0, 8).toUpperCase()} `
+                                                : `#${item.id.slice(0, 8).toUpperCase()} `}
                                         </span>
                                         {activeTab === "sacolas" && (
                                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/Button";
 import { Plus, Search, Edit2, Trash2, FolderTree, X, Loader2, Lock, Globe } from "lucide-react";
 import { toast } from "react-hot-toast";

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
 import {
@@ -162,7 +161,7 @@ export default function AdminWhatsAppDashboard() {
                     image_url, 
                     created_at,
                     products:products(count)
-                `).eq('products.status', 'available'),
+                `).eq('products.status', 'available').eq('products.available_in_store', true),
                 supabase.from("whatsapp_groups").select("*").order("created_at", { ascending: false }),
                 supabase.from("whatsapp_settings").select("*").limit(1).single(),
                 supabase
@@ -451,804 +450,799 @@ export default function AdminWhatsAppDashboard() {
         </div>;
     }
 
-    // ─── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-soft flex">
-            <AdminSidebar />
-
-            <main className="flex-1 p-12 overflow-y-auto">
-                <header className="flex justify-between items-center mb-10">
-                    <div className="flex items-center gap-6">
-                        <div>
-                            <h1 className="text-4xl font-black text-muted-text tracking-tighter lowercase flex items-center gap-3">
-                                <Zap className="text-primary" size={32} />
-                                WhatsApp
-                            </h1>
-                            <p className="text-gray-400 font-bold mt-1">Gerenciamento de campanhas e grupos</p>
-                        </div>
-
-                        {serverTime && (
-                            <div className="bg-white px-5 py-3 rounded-2xl shadow-premium border border-white flex items-center gap-4 group transition-all">
-                                <div className="relative">
-                                    <Clock size={20} className="text-primary animate-pulse" />
-                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border-2 border-white" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Hora do Servidor</span>
-                                    <span className="text-lg font-mono font-black text-muted-text tabular-nums tracking-wider">{serverTime}</span>
-                                </div>
-                            </div>
-                        )}
+        <div className="animate-in fade-in duration-500">
+            <header className="flex justify-between items-center mb-10">
+                <div className="flex items-center gap-6">
+                    <div>
+                        <h1 className="text-4xl font-black text-muted-text tracking-tighter lowercase flex items-center gap-3">
+                            <Zap className="text-primary" size={32} />
+                            WhatsApp
+                        </h1>
+                        <p className="text-gray-400 font-bold mt-1">Gerenciamento de campanhas e grupos</p>
                     </div>
-                    <Button variant="outline" className="h-14 px-8 rounded-2xl font-black gap-3 shadow-premium bg-white border-white" onClick={() => (window.location.href = '/admin/configuracoes')}>
-                        <SettingsIcon size={20} />
-                        Configurações
-                    </Button>
-                </header>
 
-                {/* Settings Panel */}
-                {showSettings && settings && (
-                    <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white mb-12 space-y-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-muted-text">Configurações Globais</h2>
-                            <div className="flex bg-soft p-1.5 rounded-2xl gap-1">
-                                <button
-                                    onClick={() => setSettingsTab('general')}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${settingsTab !== 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
-                                >
-                                    Geral
-                                </button>
-                                <button
-                                    onClick={() => setSettingsTab('payments')}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${settingsTab === 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
-                                >
-                                    Pagamentos
-                                </button>
+                    {serverTime && (
+                        <div className="bg-white px-5 py-3 rounded-2xl shadow-premium border border-white flex items-center gap-4 group transition-all">
+                            <div className="relative">
+                                <Clock size={20} className="text-primary animate-pulse" />
+                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border-2 border-white" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Hora do Servidor</span>
+                                <span className="text-lg font-mono font-black text-muted-text tabular-nums tracking-wider">{serverTime}</span>
                             </div>
                         </div>
-
-                        <div id="settings-container">
-                            {/* ABA GERAL */}
-                            {settingsTab === 'general' && (
-                                <div className="settings-content-general space-y-6">
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Palavra-chave</label>
-                                            <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                                value={settings.keyword}
-                                                onChange={e => setSettings({ ...settings, keyword: e.target.value.toUpperCase() })} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-l-2 border-primary pl-2">Intervalo Padrão (segundos)</label>
-                                            <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                                value={settings.default_interval_seconds}
-                                                onChange={e => setSettings({ ...settings, default_interval_seconds: parseInt(e.target.value) })} />
-                                        </div>
-                                    </div>
-
-                                    {/* LOGÍSTICA */}
-                                    <div className="p-6 bg-soft/50 rounded-[2rem] border border-white space-y-4">
-                                        <h3 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                            <MapPin size={14} /> Logística da Loja
-                                        </h3>
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            <div className="grid md:grid-cols-3 gap-4">
-                                                <div className="md:col-span-2 space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Endereço de Origem</label>
-                                                    <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                        value={settings.store_address || ""}
-                                                        onChange={e => setSettings({ ...settings, store_address: e.target.value })}
-                                                        placeholder="Rua Exemplo, 123, Cidade - UF" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CEP</label>
-                                                    <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                        value={settings.store_cep || ""}
-                                                        onChange={e => setSettings({ ...settings, store_cep: e.target.value })}
-                                                        placeholder="00000-000" />
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Latitude</label>
-                                                    <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                        value={settings.store_lat || ""}
-                                                        onChange={e => setSettings({ ...settings, store_lat: parseFloat(e.target.value) })} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Longitude</label>
-                                                    <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
-                                                        value={settings.store_lng || ""}
-                                                        onChange={e => setSettings({ ...settings, store_lng: parseFloat(e.target.value) })} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p className="text-[9px] text-gray-400 font-bold italic">
-                                            * Essas coordenadas são usadas como ponto de partida para calcular a distância e o preço do frete.
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center px-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão</label>
-                                            <div className="flex gap-1 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
-                                                <button onClick={() => insertFormat('rules_message', '*')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Negrito">
-                                                    <Bold size={12} />
-                                                </button>
-                                                <button onClick={() => insertFormat('rules_message', '_')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Itálico">
-                                                    <Italic size={12} />
-                                                </button>
-                                                <div className="w-px h-3 bg-gray-100 mx-1" />
-                                                {["🛍️", "✨", "🎉", "🐥"].map(emoji => (
-                                                    <button key={emoji} onClick={() => insertFormat('rules_message', emoji)} className="p-1 hover:bg-gray-50 rounded-lg transition-all text-base">
-                                                        {emoji}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <textarea
-                                            id="rules_message"
-                                            className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
-                                            value={settings?.rules_message || ""}
-                                            onChange={e => setSettings({ ...settings, rules_message: e.target.value })} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center px-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
-                                            <div className="flex gap-1 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
-                                                <button onClick={() => insertFormat('final_message', '*')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Negrito">
-                                                    <Bold size={12} />
-                                                </button>
-                                                <button onClick={() => insertFormat('final_message', '_')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Itálico">
-                                                    <Italic size={12} />
-                                                </button>
-                                                <div className="w-px h-3 bg-gray-100 mx-1" />
-                                                {["📦", "✅", "🙌", "💙"].map(emoji => (
-                                                    <button key={emoji} onClick={() => insertFormat('final_message', emoji)} className="p-1 hover:bg-gray-50 rounded-lg transition-all text-base">
-                                                        {emoji}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <textarea
-                                            id="final_message"
-                                            className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
-                                            value={settings?.final_message || ""}
-                                            onChange={e => setSettings({ ...settings, final_message: e.target.value })}
-                                            placeholder={"Use {categoryName} para incluir o nome da categoria."} />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ABA PAGAMENTOS */}
-                            {settingsTab === 'payments' && (
-                                <div className="settings-content-payments space-y-8">
-                                    <div className="grid md:grid-cols-2 gap-8">
-                                        {/* Prazos */}
-                                        <div className="space-y-6">
-                                            <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-primary pl-3">Prazos de Expiração</h3>
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
-                                                        Link do Carrinho <span>(Minutos)</span>
-                                                    </label>
-                                                    <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                                        value={settings?.cart_expiration_minutes || 60}
-                                                        onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
-                                                    <p className="text-[9px] text-gray-400 font-medium">Tempo que o cliente tem para revisar o carrinho e confirmar.</p>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
-                                                        Link de Pagamento <span>(Minutos)</span>
-                                                    </label>
-                                                    <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
-                                                        value={settings.payment_expiration_minutes || 60}
-                                                        onChange={e => setSettings({ ...settings, payment_expiration_minutes: parseInt(e.target.value) })} />
-                                                    <p className="text-[9px] text-gray-400 font-medium">Validade do QR Code PIX ou Link de Cartão gerado no Asaas.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Métodos de Pagamento */}
-                                        <div className="space-y-6">
-                                            <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-green-400 pl-3">Métodos Habilitados</h3>
-                                            <div className="space-y-3">
-                                                <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-green-500 shadow-sm">
-                                                            <Zap size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-black text-muted-text text-sm">PIX (Asaas)</p>
-                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">Liberação Imediata</p>
-                                                        </div>
-                                                    </div>
-                                                    <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
-                                                        checked={settings.asaas_pix_enabled !== false}
-                                                        onChange={e => setSettings({ ...settings, asaas_pix_enabled: e.target.checked })} />
-                                                </label>
-
-                                                <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
-                                                            <Smartphone size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-black text-muted-text text-sm">Cartão / Boleto / Outros</p>
-                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">Checkout Externo Asaas</p>
-                                                        </div>
-                                                    </div>
-                                                    <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
-                                                        checked={settings.asaas_card_enabled !== false}
-                                                        onChange={e => setSettings({ ...settings, asaas_card_enabled: e.target.checked })} />
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex gap-4 pt-4 border-t border-soft">
-                            <Button variant="outline" onClick={() => setShowSettings(false)} className="flex-1 h-14 rounded-full font-black uppercase text-xs tracking-widest">Cancelar</Button>
-                            <Button onClick={updateSettings} className="flex-[2] h-14 rounded-full shadow-vibrant font-black uppercase text-xs tracking-widest">Salvar Alterações</Button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Tabs */}
-                <div className="flex gap-4 mb-8">
-                    <button onClick={() => setActiveTab("campaigns")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "campaigns" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
-                        <Send size={18} /> Campanhas
-                    </button>
-                    <button onClick={() => setActiveTab("groups")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "groups" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
-                        <Users size={18} /> Grupos ({groups.length})
-                    </button>
-                    <button onClick={() => setActiveTab("connection")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "connection" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
-                        <QrCode size={18} /> Conexão
-                    </button>
+                    )}
                 </div>
+                <Button variant="outline" className="h-14 px-8 rounded-2xl font-black gap-3 shadow-premium bg-white border-white" onClick={() => (window.location.href = '/admin/configuracoes')}>
+                    <SettingsIcon size={20} />
+                    Configurações
+                </Button>
+            </header>
 
-                {/* ── CAMPAIGNS TAB ── */}
-                {activeTab === "campaigns" && (
-                    <div className="space-y-6">
-                        {/* Top bar */}
-                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                            <div className="flex-1">
-                                <h2 className="text-2xl font-black text-muted-text">Campanhas Programadas</h2>
-                                <p className="text-sm font-bold text-gray-400 mt-0.5">As campanhas são disparadas automaticamente no horário configurado</p>
-
-                                {/* Filtros integrados no top bar */}
-                                <div className="mt-6 flex flex-wrap gap-3">
-                                    <div className="relative flex-1 min-w-[200px]">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                                            <Send size={16} className="rotate-[-45deg]" />
-                                        </div>
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar campanha..."
-                                            className="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-sm outline-none shadow-premium focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-300"
-                                            value={search}
-                                            onChange={e => setSearch(e.target.value)}
-                                        />
-                                    </div>
-                                    <select
-                                        className="pl-6 pr-10 py-3 bg-white rounded-2xl border-none font-black text-[10px] uppercase tracking-widest outline-none shadow-premium appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
-                                        value={filterStatus}
-                                        onChange={e => setFilterStatus(e.target.value as any)}
-                                    >
-                                        <option value="">Todos os Status</option>
-                                        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                                            <option key={key} value={key}>{cfg.label}</option>
-                                        ))}
-                                    </select>
-                                    <div className="flex gap-2 items-center">
-                                        <div className="relative">
-                                            <input
-                                                type="date"
-                                                className="pl-4 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-xs outline-none shadow-premium focus:ring-2 focus:ring-primary/20"
-                                                value={filterDateFrom}
-                                                onChange={e => setFilterDateFrom(e.target.value)}
-                                            />
-                                        </div>
-                                        <span className="text-gray-300 font-black text-[10px]">ATÉ</span>
-                                        <div className="relative">
-                                            <input
-                                                type="date"
-                                                className="pl-4 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-xs outline-none shadow-premium focus:ring-2 focus:ring-primary/20"
-                                                value={filterDateTo}
-                                                onChange={e => setFilterDateTo(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <Button
-                                className="h-14 px-8 rounded-full shadow-vibrant gap-2 font-black flex-shrink-0"
-                                onClick={openModal}
+            {/* Settings Panel */}
+            {showSettings && settings && (
+                <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white mb-12 space-y-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-black text-muted-text">Configurações Globais</h2>
+                        <div className="flex bg-soft p-1.5 rounded-2xl gap-1">
+                            <button
+                                onClick={() => setSettingsTab('general')}
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${settingsTab !== 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
                             >
-                                <Plus size={20} /> Criar Campanha
-                            </Button>
+                                Geral
+                            </button>
+                            <button
+                                onClick={() => setSettingsTab('payments')}
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${settingsTab === 'payments' ? 'bg-primary text-white shadow-sm' : 'text-gray-400 opacity-60'}`}
+                            >
+                                Pagamentos
+                            </button>
                         </div>
+                    </div>
 
-                        {/* Campaign list */}
-                        {loading ? (
-                            <div className="bg-white p-20 rounded-[2.5rem] flex justify-center shadow-premium">
-                                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        ) : filteredCampaigns.length === 0 ? (
-                            <div className="bg-white/60 border-4 border-dashed border-soft rounded-[3rem] p-24 text-center">
-                                <div className="text-6xl mb-4">🔍</div>
-                                <h3 className="text-2xl font-black text-muted-text opacity-50">Nenhuma campanha encontrada</h3>
-                                <p className="text-gray-400 font-bold mt-2">Tente ajustar seus filtros de busca</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {filteredCampaigns.map(campaign => {
-                                    const st = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.pending;
-                                    const progress = campaign.total_products > 0
-                                        ? Math.round((campaign.products_sent / campaign.total_products) * 100)
-                                        : 0;
-                                    return (
-                                        <div key={campaign.id}
-                                            className={`bg-white p-6 rounded-[2rem] shadow-premium border-2 transition-all ${campaign.status === "running" ? "border-primary shadow-vibrant ring-4 ring-primary/5" : "border-white"}`}
-                                        >
-                                            <div className="flex items-center gap-5">
-                                                {/* Status dot */}
-                                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${st.dot} ${campaign.status === "running" ? "animate-ping" : ""}`} />
+                    <div id="settings-container">
+                        {/* ABA GERAL */}
+                        {settingsTab === 'general' && (
+                            <div className="settings-content-general space-y-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Palavra-chave</label>
+                                        <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                            value={settings.keyword}
+                                            onChange={e => setSettings({ ...settings, keyword: e.target.value.toUpperCase() })} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-l-2 border-primary pl-2">Intervalo Padrão (segundos)</label>
+                                        <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                            value={settings.default_interval_seconds}
+                                            onChange={e => setSettings({ ...settings, default_interval_seconds: parseInt(e.target.value) })} />
+                                    </div>
+                                </div>
 
-                                                {/* Name + category */}
-                                                <div className="flex-1 min-w-0">
-                                                    <h3 className="font-black text-muted-text truncate">{campaign.name}</h3>
-                                                    <p className="text-xs font-bold text-gray-400">{campaign.categories?.name || "Categoria"}</p>
-                                                </div>
-
-                                                {/* Status badge */}
-                                                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${st.color}`}>
-                                                    {st.label}
-                                                </span>
-
-                                                {/* Scheduled date */}
-                                                {campaign.scheduled_at && (
-                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
-                                                        <Calendar size={13} />
-                                                        {new Date(campaign.scheduled_at).toLocaleString("pt-BR", {
-                                                            day: "2-digit", month: "2-digit", year: "numeric",
-                                                            hour: "2-digit", minute: "2-digit"
-                                                        })}
-                                                    </div>
-                                                )}
-
-                                                {/* Progress */}
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-20 h-1.5 bg-soft rounded-full overflow-hidden">
-                                                        <div className={`h-full rounded-full ${campaign.status === "running" ? "bg-primary animate-pulse" : "bg-primary"}`}
-                                                            style={{ width: `${progress}%` }} />
-                                                    </div>
-                                                    <span className="text-xs font-black text-gray-400 w-8">{progress}%</span>
-                                                </div>
-
-                                                {/* Products count */}
-                                                <div className="text-xs font-bold text-gray-400 whitespace-nowrap">
-                                                    {campaign.products_sent}/{campaign.total_products} produtos
-                                                </div>
-
-                                                {/* Actions */}
-                                                <div className="flex items-center gap-2 flex-shrink-0">
-                                                    {campaign.status === "running" && (
-                                                        <button
-                                                            onClick={() => handleStopCampaign(campaign.id)}
-                                                            disabled={isStopping === campaign.id}
-                                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 text-xs font-black uppercase transition-all"
-                                                        >
-                                                            {isStopping === campaign.id ? <Loader2 size={14} className="animate-spin" /> : <Square size={14} />}
-                                                            Parar
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleDeleteCampaign(campaign.id)}
-                                                        className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (typeof window !== "undefined") {
-                                                                window.location.href = `/admin/whatsapp/campanhas/${campaign.id}`;
-                                                            }
-                                                        }}
-                                                        className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 transition-all"
-                                                    >
-                                                        <ChevronRight size={18} />
-                                                    </button>
-                                                </div>
+                                {/* LOGÍSTICA */}
+                                <div className="p-6 bg-soft/50 rounded-[2rem] border border-white space-y-4">
+                                    <h3 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                        <MapPin size={14} /> Logística da Loja
+                                    </h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="grid md:grid-cols-3 gap-4">
+                                            <div className="md:col-span-2 space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Endereço de Origem</label>
+                                                <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                    value={settings.store_address || ""}
+                                                    onChange={e => setSettings({ ...settings, store_address: e.target.value })}
+                                                    placeholder="Rua Exemplo, 123, Cidade - UF" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CEP</label>
+                                                <input type="text" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                    value={settings.store_cep || ""}
+                                                    onChange={e => setSettings({ ...settings, store_cep: e.target.value })}
+                                                    placeholder="00000-000" />
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* ── GROUPS TAB ── */}
-                {activeTab === "groups" && (
-                    <div className="grid lg:grid-cols-3 gap-8">
-                        <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 h-fit">
-                            <h2 className="text-2xl font-black text-muted-text flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3"><Plus size={24} className="text-primary" /> Novo Grupo</div>
-                                <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl gap-2 font-bold px-4"
-                                    onClick={handleFetchGroups} disabled={fetchingGroups}>
-                                    {fetchingGroups ? <Loader2 size={16} className="animate-spin" /> : <Users size={16} />}
-                                    <span className="hidden sm:inline">Buscar</span>
-                                </Button>
-                            </h2>
-                            {showGroupSelector && (
-                                <div className="bg-soft p-4 rounded-2xl max-h-60 overflow-y-auto space-y-2 border-2 border-primary/20">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grupos da API</span>
-                                        <button onClick={() => setShowGroupSelector(false)} className="text-xs font-bold text-primary hover:underline">fechar</button>
-                                    </div>
-                                    {availableWhatsAppGroups.map(g => (
-                                        <button key={g.id} type="button"
-                                            onClick={() => { setNewGroup({ name: g.subject, group_jid: g.id }); setShowGroupSelector(false); }}
-                                            className="w-full text-left p-3 bg-white rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all">
-                                            <div className="font-black text-sm text-muted-text">{g.subject}</div>
-                                            <div className="text-[10px] text-gray-400 font-mono truncate">{g.id}</div>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            <form onSubmit={handleAddGroup} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome do Grupo</label>
-                                    <input type="text" placeholder="Ex: Mamães VIP"
-                                        className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm"
-                                        value={newGroup.name}
-                                        onChange={e => setNewGroup({ ...newGroup, name: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID do Grupo (JID)</label>
-                                    <input type="text" placeholder="123456789@g.us"
-                                        className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm"
-                                        value={newGroup.group_jid}
-                                        onChange={e => setNewGroup({ ...newGroup, group_jid: e.target.value })} />
-                                </div>
-                                <Button type="submit" className="w-full h-16 rounded-full shadow-vibrant font-black text-lg gap-2">
-                                    <Plus size={20} /> Adicionar Grupo
-                                </Button>
-                            </form>
-                        </div>
-                        <div className="lg:col-span-2 space-y-6">
-                            {groups.map(group => (
-                                <div key={group.id} className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-white flex justify-between items-center">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 bg-soft rounded-2xl flex items-center justify-center">
-                                            <Users size={24} className="text-primary" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-black text-muted-text">{group.name}</h3>
-                                            <p className="text-xs font-bold text-gray-400 mt-0.5 font-mono">{group.group_jid}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => toggleGroupStatus(group.id, group.active)}
-                                            className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${group.active ? "bg-green-100 text-green-600 hover:bg-green-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}>
-                                            {group.active ? "Ativo" : "Inativo"}
-                                        </button>
-                                        <button onClick={() => handleDeleteGroup(group.id)}
-                                            className="w-10 h-10 rounded-xl flex items-center justify-center text-red-300 hover:bg-red-50 hover:text-red-500 transition-all">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                            {groups.length === 0 && (
-                                <div className="bg-white/50 border-4 border-dashed border-soft rounded-[3rem] p-20 text-center">
-                                    <div className="text-6xl mb-4">💬</div>
-                                    <h3 className="text-2xl font-black text-muted-text opacity-50">Nenhum grupo cadastrado</h3>
-                                    <p className="text-gray-400 font-bold mt-2">Adicione seu primeiro grupo para começar as campanhas</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* ── CONNECTION TAB ── */}
-                {activeTab === "connection" && (
-                    <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white flex flex-col items-center justify-center min-h-[500px] text-center space-y-8">
-                        {loading ? (
-                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                        ) : connectionStatus?.instance?.state === "open" ? (
-                            <>
-                                <div className="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                                    <Smartphone size={64} />
-                                </div>
-                                <h2 className="text-3xl font-black text-muted-text">WhatsApp Conectado!</h2>
-                                <p className="text-gray-400 font-bold max-w-md">
-                                    Instância <span className="text-primary">{connectionStatus?.instance?.instanceName}</span> está ativa.
-                                </p>
-                                <div className="flex gap-4">
-                                    <Button variant="outline" onClick={checkConnection} className="rounded-full h-12 px-8">Atualizar Status</Button>
-                                    <Button onClick={handleLogout} className="rounded-full h-12 px-8 bg-red-100 text-red-600 hover:bg-red-200 shadow-none border-none">
-                                        <LogOut size={18} className="mr-2" /> Desconectar
-                                    </Button>
-                                </div>
-                                <div className="w-full max-w-md pt-8 border-t border-gray-100">
-                                    <div className="bg-soft p-6 rounded-[2rem] text-left space-y-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <SettingsIcon size={20} className="text-primary" />
-                                            <h3 className="font-black text-muted-text uppercase text-xs tracking-widest">Configurações Avançadas</h3>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">URL do Webhook</label>
-                                            <div className="flex gap-2">
-                                                <input type="text" id="webhook-url" className="flex-1 p-3 bg-white rounded-xl border-none font-bold text-xs"
-                                                    placeholder="https://seu-site.com/api/whatsapp/webhook"
-                                                    value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
-                                                <Button size="sm" className="rounded-xl px-4 font-black text-[10px]"
-                                                    onClick={async (e) => {
-                                                        const target = e.currentTarget.parentElement;
-                                                        const input = target?.querySelector('input') as HTMLInputElement;
-                                                        const url = input?.value;
-                                                        if (!url) return toast.error("Insira uma URL válida");
-                                                        const tid = toast.loading("Configurando Webhook...");
-                                                        try {
-                                                            const res = await evolutionService.registerWebhook(url);
-                                                            if (res.status === "SUCCESS" || res.webhook) toast.success("Webhook configurado!", { id: tid });
-                                                            else toast.error(`Erro: ${res.message || "Falha"}`, { id: tid });
-                                                        } catch { toast.error("Erro ao registrar Webhook", { id: tid }); }
-                                                    }}>
-                                                    Configurar
-                                                </Button>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Latitude</label>
+                                                <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                    value={settings.store_lat || ""}
+                                                    onChange={e => setSettings({ ...settings, store_lat: parseFloat(e.target.value) })} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Longitude</label>
+                                                <input type="number" step="any" className="w-full p-4 bg-white rounded-2xl border-none font-bold text-xs"
+                                                    value={settings.store_lng || ""}
+                                                    onChange={e => setSettings({ ...settings, store_lng: parseFloat(e.target.value) })} />
                                             </div>
                                         </div>
                                     </div>
+                                    <p className="text-[9px] text-gray-400 font-bold italic">
+                                        * Essas coordenadas são usadas como ponto de partida para calcular a distância e o preço do frete.
+                                    </p>
                                 </div>
-                            </>
-                        ) : (
-                            <>
-                                <h2 className="text-3xl font-black text-muted-text">Conectar WhatsApp</h2>
-                                <p className="text-gray-400 font-bold max-w-md">
-                                    Abra o WhatsApp, vá em <span className="text-muted-text">Aparelhos Conectados &gt; Conectar Aparelho</span> e escaneie o código abaixo.
-                                </p>
-                                {qrCode ? (
-                                    <div className="p-4 bg-white rounded-3xl shadow-lg border-4 border-soft">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={qrCode} alt="QR Code" className="w-64 h-64 object-contain" />
-                                    </div>
-                                ) : (
-                                    <div className="w-64 h-64 bg-soft rounded-3xl flex items-center justify-center">
-                                        {connecting ? (
-                                            <div className="text-center">
-                                                <Loader2 size={32} className="mx-auto text-primary animate-spin mb-2" />
-                                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Gerando QR Code...</span>
-                                            </div>
-                                        ) : (
-                                            <Button onClick={connect} variant="outline" className="rounded-full">Gerar QR Code</Button>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                )}
-
-                {/* ── MODAL CRIAR CAMPANHA ── */}
-                {showModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
-                        <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
-                            {/* Modal Header */}
-                            <div className="flex justify-between items-center p-10 pb-6 sticky top-0 bg-white rounded-t-[3rem] z-10 border-b border-soft">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
-                                        <Zap size={20} className="text-primary" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-black text-muted-text">Nova Campanha</h2>
-                                        <p className="text-xs font-bold text-gray-400">Configure e agende o disparo</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => setShowModal(false)}
-                                    className="w-10 h-10 rounded-2xl bg-soft flex items-center justify-center text-gray-400 hover:text-muted-text hover:bg-gray-100 transition-all">
-                                    <X size={18} />
-                                </button>
-                            </div>
-
-                            <div className="p-10 space-y-8">
-                                {/* Nome */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome da Campanha</label>
-                                    <input type="text" placeholder="Ex: Liquidação Inverno 2026"
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
-                                        value={form.name}
-                                        onChange={e => setForm({ ...form, name: e.target.value })} />
-                                </div>
-
-                                {/* Data e hora */}
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-between gap-1.5">
-                                        <div className="flex items-center gap-1.5"><Calendar size={12} /> Data e Hora do Disparo</div>
-                                        {serverTime && (
-                                            <span className="text-primary normal-case">
-                                                Horário do servidor: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        )}
-                                    </label>
-                                    <input type="datetime-local"
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
-                                        value={form.scheduled_at}
-                                        onChange={e => setForm({ ...form, scheduled_at: e.target.value })} />
-                                </div>
-
-                                <hr className="border-soft" />
-
-                                {/* Mensagem Inicial */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center group/tools">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">1</div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Inicial</label>
-                                        </div>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
-                                            <button type="button" onClick={() => insertText('initial_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
-                                            <button type="button" onClick={() => insertText('initial_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
-                                            <div className="w-px h-4 bg-gray-200 mx-1" />
-                                            <button type="button" onClick={() => insertEmoji('initial_message', '🛍️')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛍️</button>
-                                            <button type="button" onClick={() => insertEmoji('initial_message', '✨')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✨</button>
-                                            <button type="button" onClick={() => insertEmoji('initial_message', '🎉')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🎉</button>
-                                        </div>
-                                    </div>
-                                    <textarea placeholder="Olá! Bem-vindo(a) ao nosso catálogo especial! 🎉"
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
-                                        value={form.initial_message}
-                                        onChange={e => setForm({ ...form, initial_message: e.target.value })} />
-                                    <div className="flex items-center gap-3">
-                                        <Clock size={14} className="text-gray-400 flex-shrink-0" />
-                                        <label className="text-xs font-black text-gray-400">Aguardar</label>
-                                        <input type="number" min={5} max={300}
-                                            className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
-                                            value={form.initial_message_interval}
-                                            onChange={e => setForm({ ...form, initial_message_interval: parseInt(e.target.value) })} />
-                                        <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
-                                    </div>
-                                </div>
-
-                                <hr className="border-soft" />
-
-                                {/* Mensagem de Regras */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center group/tools">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">2</div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
-                                        </div>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
-                                            <button type="button" onClick={() => insertText('rules_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
-                                            <button type="button" onClick={() => insertText('rules_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
-                                            <div className="w-px h-4 bg-gray-200 mx-1" />
-                                            <button type="button" onClick={() => insertEmoji('rules_message', '📋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📋</button>
-                                            <button type="button" onClick={() => insertEmoji('rules_message', '📦')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📦</button>
-                                            <button type="button" onClick={() => insertEmoji('rules_message', '✅')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✅</button>
-                                        </div>
-                                    </div>
-                                    <textarea placeholder="📋 Nossas regras: Para comprar, envie o código do produto..."
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
-                                        value={form.rules_message}
-                                        onChange={e => setForm({ ...form, rules_message: e.target.value })} />
-                                    <div className="flex items-center gap-3">
-                                        <Clock size={14} className="text-gray-400 flex-shrink-0" />
-                                        <label className="text-xs font-black text-gray-400">Aguardar</label>
-                                        <input type="number" min={5} max={300}
-                                            className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
-                                            value={form.rules_interval}
-                                            onChange={e => setForm({ ...form, rules_interval: parseInt(e.target.value) })} />
-                                        <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
-                                    </div>
-                                </div>
-
-                                <hr className="border-soft" />
-
-                                {/* Categoria */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">3</div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Categoria de Produtos</label>
-                                    </div>
-                                    <select className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
-                                        value={form.category_id}
-                                        onChange={e => setForm({ ...form, category_id: e.target.value })}>
-                                        <option value="">Selecione uma categoria</option>
-                                        {categories.map(cat => {
-                                            const count = cat.products?.[0]?.count || 0;
-                                            return (
-                                                <option key={cat.id} value={cat.id}>
-                                                    {cat.name} {count > 0 ? `(${count} disponíveis)` : '(Sem estoque)'}
-                                                </option>
-                                            )
-                                        })}
-                                    </select>
-                                    <div className="flex items-center gap-3">
-                                        <Clock size={14} className="text-gray-400 flex-shrink-0" />
-                                        <label className="text-xs font-black text-gray-400">Intervalo entre produtos</label>
-                                        <input type="number" min={10} max={300}
-                                            className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
-                                            value={form.category_interval}
-                                            onChange={e => setForm({ ...form, category_interval: parseInt(e.target.value) })} />
-                                        <label className="text-xs font-black text-gray-400">segundos</label>
-                                    </div>
-                                </div>
-
-                                <hr className="border-soft" />
-
-                                {/* Mensagem Final */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center group/tools">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">4</div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
-                                        </div>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
-                                            <button type="button" onClick={() => insertText('final_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
-                                            <button type="button" onClick={() => insertText('final_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
-                                            <div className="w-px h-4 bg-gray-200 mx-1" />
-                                            <button type="button" onClick={() => insertEmoji('final_message', '🛒')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛒</button>
-                                            <button type="button" onClick={() => insertEmoji('final_message', '👋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">👋</button>
-                                            <button type="button" onClick={() => insertEmoji('final_message', '💙')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">💙</button>
-                                        </div>
-                                    </div>
-                                    <textarea placeholder="É isso! Esses são todos os produtos disponíveis. Para comprar, responda com o código! 🛒"
-                                        className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
-                                        value={form.final_message}
-                                        onChange={e => setForm({ ...form, final_message: e.target.value })} />
-                                </div>
-
-                                <hr className="border-soft" />
-
-                                {/* Grupos */}
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grupos de Destino</label>
-                                    {groups.filter(g => g.active).length === 0 ? (
-                                        <div className="p-6 bg-soft rounded-2xl text-center text-sm font-bold text-gray-400">
-                                            Nenhum grupo ativo. Cadastre grupos na aba "Grupos".
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {groups.filter(g => g.active).map(group => (
-                                                <button key={group.id} type="button"
-                                                    onClick={() => toggleGroupInForm(group.id)}
-                                                    className={`p-4 rounded-2xl border-2 transition-all text-left ${form.group_ids.includes(group.id)
-                                                        ? "border-primary bg-primary/5"
-                                                        : "border-soft hover:border-primary/20 bg-soft"}`}>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${form.group_ids.includes(group.id) ? "border-primary bg-primary" : "border-gray-300"}`}>
-                                                            {form.group_ids.includes(group.id) && <CheckCircle2 size={10} className="text-white" />}
-                                                        </div>
-                                                        <span className="font-black text-sm text-muted-text">{group.name}</span>
-                                                    </div>
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão</label>
+                                        <div className="flex gap-1 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+                                            <button onClick={() => insertFormat('rules_message', '*')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Negrito">
+                                                <Bold size={12} />
+                                            </button>
+                                            <button onClick={() => insertFormat('rules_message', '_')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Itálico">
+                                                <Italic size={12} />
+                                            </button>
+                                            <div className="w-px h-3 bg-gray-100 mx-1" />
+                                            {["🛍️", "✨", "🎉", "🐥"].map(emoji => (
+                                                <button key={emoji} onClick={() => insertFormat('rules_message', emoji)} className="p-1 hover:bg-gray-50 rounded-lg transition-all text-base">
+                                                    {emoji}
                                                 </button>
                                             ))}
                                         </div>
-                                    )}
+                                    </div>
+                                    <textarea
+                                        id="rules_message"
+                                        className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.rules_message || ""}
+                                        onChange={e => setSettings({ ...settings, rules_message: e.target.value })} />
                                 </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem final padrão</label>
+                                        <div className="flex gap-1 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+                                            <button onClick={() => insertFormat('final_message', '*')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Negrito">
+                                                <Bold size={12} />
+                                            </button>
+                                            <button onClick={() => insertFormat('final_message', '_')} className="p-1.5 hover:bg-gray-50 rounded-lg transition-all text-primary" title="Itálico">
+                                                <Italic size={12} />
+                                            </button>
+                                            <div className="w-px h-3 bg-gray-100 mx-1" />
+                                            {["📦", "✅", "🙌", "💙"].map(emoji => (
+                                                <button key={emoji} onClick={() => insertFormat('final_message', emoji)} className="p-1 hover:bg-gray-50 rounded-lg transition-all text-base">
+                                                    {emoji}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        id="final_message"
+                                        className="w-full p-4 bg-soft rounded-2xl border-none font-bold h-28 outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.final_message || ""}
+                                        onChange={e => setSettings({ ...settings, final_message: e.target.value })}
+                                        placeholder={"Use {categoryName} para incluir o nome da categoria."} />
+                                </div>
+                            </div>
+                        )}
 
-                                {/* Actions */}
-                                <div className="flex gap-4 pt-2">
-                                    <Button variant="outline" className="flex-1 h-14 rounded-full font-black"
-                                        onClick={() => setShowModal(false)} disabled={saving}>
-                                        Cancelar
-                                    </Button>
-                                    <Button className="flex-1 h-14 rounded-full shadow-vibrant font-black gap-2"
-                                        onClick={handleCreateCampaign} disabled={saving}>
-                                        {saving ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
-                                        {saving ? "Agendando..." : "Agendar Campanha"}
-                                    </Button>
+                        {/* ABA PAGAMENTOS */}
+                        {settingsTab === 'payments' && (
+                            <div className="settings-content-payments space-y-8">
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    {/* Prazos */}
+                                    <div className="space-y-6">
+                                        <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-primary pl-3">Prazos de Expiração</h3>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
+                                                    Link do Carrinho <span>(Minutos)</span>
+                                                </label>
+                                                <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                    value={settings?.cart_expiration_minutes || 60}
+                                                    onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
+                                                <p className="text-[9px] text-gray-400 font-medium">Tempo que o cliente tem para revisar o carrinho e confirmar.</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
+                                                    Link de Pagamento <span>(Minutos)</span>
+                                                </label>
+                                                <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold"
+                                                    value={settings.payment_expiration_minutes || 60}
+                                                    onChange={e => setSettings({ ...settings, payment_expiration_minutes: parseInt(e.target.value) })} />
+                                                <p className="text-[9px] text-gray-400 font-medium">Validade do QR Code PIX ou Link de Cartão gerado no Asaas.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Métodos de Pagamento */}
+                                    <div className="space-y-6">
+                                        <h3 className="text-sm font-black text-muted-text uppercase tracking-widest border-l-4 border-green-400 pl-3">Métodos Habilitados</h3>
+                                        <div className="space-y-3">
+                                            <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-green-500 shadow-sm">
+                                                        <Zap size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-muted-text text-sm">PIX (Asaas)</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Liberação Imediata</p>
+                                                    </div>
+                                                </div>
+                                                <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
+                                                    checked={settings.asaas_pix_enabled !== false}
+                                                    onChange={e => setSettings({ ...settings, asaas_pix_enabled: e.target.checked })} />
+                                            </label>
+
+                                            <label className="flex items-center justify-between p-4 bg-soft rounded-2xl cursor-pointer hover:bg-gray-100 transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
+                                                        <Smartphone size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-muted-text text-sm">Cartão / Boleto / Outros</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Checkout Externo Asaas</p>
+                                                    </div>
+                                                </div>
+                                                <input type="checkbox" className="w-6 h-6 rounded-lg border-none bg-white text-primary focus:ring-0"
+                                                    checked={settings.asaas_card_enabled !== false}
+                                                    onChange={e => setSettings({ ...settings, asaas_card_enabled: e.target.checked })} />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-4 pt-4 border-t border-soft">
+                        <Button variant="outline" onClick={() => setShowSettings(false)} className="flex-1 h-14 rounded-full font-black uppercase text-xs tracking-widest">Cancelar</Button>
+                        <Button onClick={updateSettings} className="flex-[2] h-14 rounded-full shadow-vibrant font-black uppercase text-xs tracking-widest">Salvar Alterações</Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Tabs */}
+            <div className="flex gap-4 mb-8">
+                <button onClick={() => setActiveTab("campaigns")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "campaigns" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                    <Send size={18} /> Campanhas
+                </button>
+                <button onClick={() => setActiveTab("groups")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "groups" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                    <Users size={18} /> Grupos ({groups.length})
+                </button>
+                <button onClick={() => setActiveTab("connection")} className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 ${activeTab === "connection" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text"}`}>
+                    <QrCode size={18} /> Conexão
+                </button>
+            </div>
+
+            {/* ── CAMPAIGNS TAB ── */}
+            {activeTab === "campaigns" && (
+                <div className="space-y-6">
+                    {/* Top bar */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div className="flex-1">
+                            <h2 className="text-2xl font-black text-muted-text">Campanhas Programadas</h2>
+                            <p className="text-sm font-bold text-gray-400 mt-0.5">As campanhas são disparadas automaticamente no horário configurado</p>
+
+                            {/* Filtros integrados no top bar */}
+                            <div className="mt-6 flex flex-wrap gap-3">
+                                <div className="relative flex-1 min-w-[200px]">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <Send size={16} className="rotate-[-45deg]" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar campanha..."
+                                        className="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-sm outline-none shadow-premium focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-300"
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                    />
+                                </div>
+                                <select
+                                    className="pl-6 pr-10 py-3 bg-white rounded-2xl border-none font-black text-[10px] uppercase tracking-widest outline-none shadow-premium appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
+                                    value={filterStatus}
+                                    onChange={e => setFilterStatus(e.target.value as any)}
+                                >
+                                    <option value="">Todos os Status</option>
+                                    {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                                        <option key={key} value={key}>{cfg.label}</option>
+                                    ))}
+                                </select>
+                                <div className="flex gap-2 items-center">
+                                    <div className="relative">
+                                        <input
+                                            type="date"
+                                            className="pl-4 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-xs outline-none shadow-premium focus:ring-2 focus:ring-primary/20"
+                                            value={filterDateFrom}
+                                            onChange={e => setFilterDateFrom(e.target.value)}
+                                        />
+                                    </div>
+                                    <span className="text-gray-300 font-black text-[10px]">ATÉ</span>
+                                    <div className="relative">
+                                        <input
+                                            type="date"
+                                            className="pl-4 pr-4 py-3 bg-white rounded-2xl border-none font-bold text-xs outline-none shadow-premium focus:ring-2 focus:ring-primary/20"
+                                            value={filterDateTo}
+                                            onChange={e => setFilterDateTo(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        <Button
+                            className="h-14 px-8 rounded-full shadow-vibrant gap-2 font-black flex-shrink-0"
+                            onClick={openModal}
+                        >
+                            <Plus size={20} /> Criar Campanha
+                        </Button>
                     </div>
-                )}
-            </main>
+
+                    {/* Campaign list */}
+                    {loading ? (
+                        <div className="bg-white p-20 rounded-[2.5rem] flex justify-center shadow-premium">
+                            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        </div>
+                    ) : filteredCampaigns.length === 0 ? (
+                        <div className="bg-white/60 border-4 border-dashed border-soft rounded-[3rem] p-24 text-center">
+                            <div className="text-6xl mb-4">🔍</div>
+                            <h3 className="text-2xl font-black text-muted-text opacity-50">Nenhuma campanha encontrada</h3>
+                            <p className="text-gray-400 font-bold mt-2">Tente ajustar seus filtros de busca</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {filteredCampaigns.map(campaign => {
+                                const st = STATUS_CONFIG[campaign.status] || STATUS_CONFIG.pending;
+                                const progress = campaign.total_products > 0
+                                    ? Math.round((campaign.products_sent / campaign.total_products) * 100)
+                                    : 0;
+                                return (
+                                    <div key={campaign.id}
+                                        className={`bg-white p-6 rounded-[2rem] shadow-premium border-2 transition-all ${campaign.status === "running" ? "border-primary shadow-vibrant ring-4 ring-primary/5" : "border-white"}`}
+                                    >
+                                        <div className="flex items-center gap-5">
+                                            {/* Status dot */}
+                                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${st.dot} ${campaign.status === "running" ? "animate-ping" : ""}`} />
+
+                                            {/* Name + category */}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-black text-muted-text truncate">{campaign.name}</h3>
+                                                <p className="text-xs font-bold text-gray-400">{campaign.categories?.name || "Categoria"}</p>
+                                            </div>
+
+                                            {/* Status badge */}
+                                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${st.color}`}>
+                                                {st.label}
+                                            </span>
+
+                                            {/* Scheduled date */}
+                                            {campaign.scheduled_at && (
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                                                    <Calendar size={13} />
+                                                    {new Date(campaign.scheduled_at).toLocaleString("pt-BR", {
+                                                        day: "2-digit", month: "2-digit", year: "numeric",
+                                                        hour: "2-digit", minute: "2-digit"
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {/* Progress */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-20 h-1.5 bg-soft rounded-full overflow-hidden">
+                                                    <div className={`h-full rounded-full ${campaign.status === "running" ? "bg-primary animate-pulse" : "bg-primary"}`}
+                                                        style={{ width: `${progress}%` }} />
+                                                </div>
+                                                <span className="text-xs font-black text-gray-400 w-8">{progress}%</span>
+                                            </div>
+
+                                            {/* Products count */}
+                                            <div className="text-xs font-bold text-gray-400 whitespace-nowrap">
+                                                {campaign.products_sent}/{campaign.total_products} produtos
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                {campaign.status === "running" && (
+                                                    <button
+                                                        onClick={() => handleStopCampaign(campaign.id)}
+                                                        disabled={isStopping === campaign.id}
+                                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 text-xs font-black uppercase transition-all"
+                                                    >
+                                                        {isStopping === campaign.id ? <Loader2 size={14} className="animate-spin" /> : <Square size={14} />}
+                                                        Parar
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleDeleteCampaign(campaign.id)}
+                                                    className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (typeof window !== "undefined") {
+                                                            window.location.href = `/admin/whatsapp/campanhas/${campaign.id}`;
+                                                        }
+                                                    }}
+                                                    className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 transition-all"
+                                                >
+                                                    <ChevronRight size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── GROUPS TAB ── */}
+            {activeTab === "groups" && (
+                <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 h-fit">
+                        <h2 className="text-2xl font-black text-muted-text flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3"><Plus size={24} className="text-primary" /> Novo Grupo</div>
+                            <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl gap-2 font-bold px-4"
+                                onClick={handleFetchGroups} disabled={fetchingGroups}>
+                                {fetchingGroups ? <Loader2 size={16} className="animate-spin" /> : <Users size={16} />}
+                                <span className="hidden sm:inline">Buscar</span>
+                            </Button>
+                        </h2>
+                        {showGroupSelector && (
+                            <div className="bg-soft p-4 rounded-2xl max-h-60 overflow-y-auto space-y-2 border-2 border-primary/20">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grupos da API</span>
+                                    <button onClick={() => setShowGroupSelector(false)} className="text-xs font-bold text-primary hover:underline">fechar</button>
+                                </div>
+                                {availableWhatsAppGroups.map(g => (
+                                    <button key={g.id} type="button"
+                                        onClick={() => { setNewGroup({ name: g.subject, group_jid: g.id }); setShowGroupSelector(false); }}
+                                        className="w-full text-left p-3 bg-white rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all">
+                                        <div className="font-black text-sm text-muted-text">{g.subject}</div>
+                                        <div className="text-[10px] text-gray-400 font-mono truncate">{g.id}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <form onSubmit={handleAddGroup} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome do Grupo</label>
+                                <input type="text" placeholder="Ex: Mamães VIP"
+                                    className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm"
+                                    value={newGroup.name}
+                                    onChange={e => setNewGroup({ ...newGroup, name: e.target.value })} />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID do Grupo (JID)</label>
+                                <input type="text" placeholder="123456789@g.us"
+                                    className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm"
+                                    value={newGroup.group_jid}
+                                    onChange={e => setNewGroup({ ...newGroup, group_jid: e.target.value })} />
+                            </div>
+                            <Button type="submit" className="w-full h-16 rounded-full shadow-vibrant font-black text-lg gap-2">
+                                <Plus size={20} /> Adicionar Grupo
+                            </Button>
+                        </form>
+                    </div>
+                    <div className="lg:col-span-2 space-y-6">
+                        {groups.map(group => (
+                            <div key={group.id} className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-white flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-soft rounded-2xl flex items-center justify-center">
+                                        <Users size={24} className="text-primary" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-muted-text">{group.name}</h3>
+                                        <p className="text-xs font-bold text-gray-400 mt-0.5 font-mono">{group.group_jid}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => toggleGroupStatus(group.id, group.active)}
+                                        className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${group.active ? "bg-green-100 text-green-600 hover:bg-green-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}>
+                                        {group.active ? "Ativo" : "Inativo"}
+                                    </button>
+                                    <button onClick={() => handleDeleteGroup(group.id)}
+                                        className="w-10 h-10 rounded-xl flex items-center justify-center text-red-300 hover:bg-red-50 hover:text-red-500 transition-all">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {groups.length === 0 && (
+                            <div className="bg-white/50 border-4 border-dashed border-soft rounded-[3rem] p-20 text-center">
+                                <div className="text-6xl mb-4">💬</div>
+                                <h3 className="text-2xl font-black text-muted-text opacity-50">Nenhum grupo cadastrado</h3>
+                                <p className="text-gray-400 font-bold mt-2">Adicione seu primeiro grupo para começar as campanhas</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── CONNECTION TAB ── */}
+            {activeTab === "connection" && (
+                <div className="bg-white p-10 rounded-[3rem] shadow-premium border border-white flex flex-col items-center justify-center min-h-[500px] text-center space-y-8">
+                    {loading ? (
+                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    ) : connectionStatus?.instance?.state === "open" ? (
+                        <>
+                            <div className="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                                <Smartphone size={64} />
+                            </div>
+                            <h2 className="text-3xl font-black text-muted-text">WhatsApp Conectado!</h2>
+                            <p className="text-gray-400 font-bold max-w-md">
+                                Instância <span className="text-primary">{connectionStatus?.instance?.instanceName}</span> está ativa.
+                            </p>
+                            <div className="flex gap-4">
+                                <Button variant="outline" onClick={checkConnection} className="rounded-full h-12 px-8">Atualizar Status</Button>
+                                <Button onClick={handleLogout} className="rounded-full h-12 px-8 bg-red-100 text-red-600 hover:bg-red-200 shadow-none border-none">
+                                    <LogOut size={18} className="mr-2" /> Desconectar
+                                </Button>
+                            </div>
+                            <div className="w-full max-w-md pt-8 border-t border-gray-100">
+                                <div className="bg-soft p-6 rounded-[2rem] text-left space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <SettingsIcon size={20} className="text-primary" />
+                                        <h3 className="font-black text-muted-text uppercase text-xs tracking-widest">Configurações Avançadas</h3>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">URL do Webhook</label>
+                                        <div className="flex gap-2">
+                                            <input type="text" id="webhook-url" className="flex-1 p-3 bg-white rounded-xl border-none font-bold text-xs"
+                                                placeholder="https://seu-site.com/api/whatsapp/webhook"
+                                                value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
+                                            <Button size="sm" className="rounded-xl px-4 font-black text-[10px]"
+                                                onClick={async (e) => {
+                                                    const target = e.currentTarget.parentElement;
+                                                    const input = target?.querySelector('input') as HTMLInputElement;
+                                                    const url = input?.value;
+                                                    if (!url) return toast.error("Insira uma URL válida");
+                                                    const tid = toast.loading("Configurando Webhook...");
+                                                    try {
+                                                        const res = await evolutionService.registerWebhook(url);
+                                                        if (res.status === "SUCCESS" || res.webhook) toast.success("Webhook configurado!", { id: tid });
+                                                        else toast.error(`Erro: ${res.message || "Falha"}`, { id: tid });
+                                                    } catch { toast.error("Erro ao registrar Webhook", { id: tid }); }
+                                                }}>
+                                                Configurar
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="text-3xl font-black text-muted-text">Conectar WhatsApp</h2>
+                            <p className="text-gray-400 font-bold max-w-md">
+                                Abra o WhatsApp, vá em <span className="text-muted-text">Aparelhos Conectados &gt; Conectar Aparelho</span> e escaneie o código abaixo.
+                            </p>
+                            {qrCode ? (
+                                <div className="p-4 bg-white rounded-3xl shadow-lg border-4 border-soft">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={qrCode} alt="QR Code" className="w-64 h-64 object-contain" />
+                                </div>
+                            ) : (
+                                <div className="w-64 h-64 bg-soft rounded-3xl flex items-center justify-center">
+                                    {connecting ? (
+                                        <div className="text-center">
+                                            <Loader2 size={32} className="mx-auto text-primary animate-spin mb-2" />
+                                            <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Gerando QR Code...</span>
+                                        </div>
+                                    ) : (
+                                        <Button onClick={connect} variant="outline" className="rounded-full">Gerar QR Code</Button>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* ── MODAL CRIAR CAMPANHA ── */}
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
+                    <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+                        {/* Modal Header */}
+                        <div className="flex justify-between items-center p-10 pb-6 sticky top-0 bg-white rounded-t-[3rem] z-10 border-b border-soft">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
+                                    <Zap size={20} className="text-primary" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-muted-text">Nova Campanha</h2>
+                                    <p className="text-xs font-bold text-gray-400">Configure e agende o disparo</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowModal(false)}
+                                className="w-10 h-10 rounded-2xl bg-soft flex items-center justify-center text-gray-400 hover:text-muted-text hover:bg-gray-100 transition-all">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="p-10 space-y-8">
+                            {/* Nome */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome da Campanha</label>
+                                <input type="text" placeholder="Ex: Liquidação Inverno 2026"
+                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
+                                    value={form.name}
+                                    onChange={e => setForm({ ...form, name: e.target.value })} />
+                            </div>
+
+                            {/* Data e hora */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-1.5"><Calendar size={12} /> Data e Hora do Disparo</div>
+                                    {serverTime && (
+                                        <span className="text-primary normal-case">
+                                            Horário do servidor: {new Date(serverTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
+                                </label>
+                                <input type="datetime-local"
+                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
+                                    value={form.scheduled_at}
+                                    onChange={e => setForm({ ...form, scheduled_at: e.target.value })} />
+                            </div>
+
+                            <hr className="border-soft" />
+
+                            {/* Mensagem Inicial */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center group/tools">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">1</div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Inicial</label>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                        <button type="button" onClick={() => insertText('initial_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                        <button type="button" onClick={() => insertText('initial_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                        <div className="w-px h-4 bg-gray-200 mx-1" />
+                                        <button type="button" onClick={() => insertEmoji('initial_message', '🛍️')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛍️</button>
+                                        <button type="button" onClick={() => insertEmoji('initial_message', '✨')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✨</button>
+                                        <button type="button" onClick={() => insertEmoji('initial_message', '🎉')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🎉</button>
+                                    </div>
+                                </div>
+                                <textarea placeholder="Olá! Bem-vindo(a) ao nosso catálogo especial! 🎉"
+                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
+                                    value={form.initial_message}
+                                    onChange={e => setForm({ ...form, initial_message: e.target.value })} />
+                                <div className="flex items-center gap-3">
+                                    <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                                    <label className="text-xs font-black text-gray-400">Aguardar</label>
+                                    <input type="number" min={5} max={300}
+                                        className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
+                                        value={form.initial_message_interval}
+                                        onChange={e => setForm({ ...form, initial_message_interval: parseInt(e.target.value) })} />
+                                    <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
+                                </div>
+                            </div>
+
+                            <hr className="border-soft" />
+
+                            {/* Mensagem de Regras */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center group/tools">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">2</div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                        <button type="button" onClick={() => insertText('rules_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                        <button type="button" onClick={() => insertText('rules_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                        <div className="w-px h-4 bg-gray-200 mx-1" />
+                                        <button type="button" onClick={() => insertEmoji('rules_message', '📋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📋</button>
+                                        <button type="button" onClick={() => insertEmoji('rules_message', '📦')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📦</button>
+                                        <button type="button" onClick={() => insertEmoji('rules_message', '✅')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✅</button>
+                                    </div>
+                                </div>
+                                <textarea placeholder="📋 Nossas regras: Para comprar, envie o código do produto..."
+                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
+                                    value={form.rules_message}
+                                    onChange={e => setForm({ ...form, rules_message: e.target.value })} />
+                                <div className="flex items-center gap-3">
+                                    <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                                    <label className="text-xs font-black text-gray-400">Aguardar</label>
+                                    <input type="number" min={5} max={300}
+                                        className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
+                                        value={form.rules_interval}
+                                        onChange={e => setForm({ ...form, rules_interval: parseInt(e.target.value) })} />
+                                    <label className="text-xs font-black text-gray-400">segundos antes de continuar</label>
+                                </div>
+                            </div>
+
+                            <hr className="border-soft" />
+
+                            {/* Categoria */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">3</div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Categoria de Produtos</label>
+                                </div>
+                                <select className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-bold outline-none transition-all"
+                                    value={form.category_id}
+                                    onChange={e => setForm({ ...form, category_id: e.target.value })}>
+                                    <option value="">Selecione uma categoria</option>
+                                    {categories.map(cat => {
+                                        const count = cat.products?.[0]?.count || 0;
+                                        return (
+                                            <option key={cat.id} value={cat.id}>
+                                                {cat.name} {count > 0 ? `(${count} disponíveis)` : '(Sem estoque)'}
+                                            </option>
+                                        )
+                                    })}
+                                </select>
+                                <div className="flex items-center gap-3">
+                                    <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                                    <label className="text-xs font-black text-gray-400">Intervalo entre produtos</label>
+                                    <input type="number" min={10} max={300}
+                                        className="w-24 p-2 bg-soft rounded-xl border-none font-black text-center text-sm outline-none"
+                                        value={form.category_interval}
+                                        onChange={e => setForm({ ...form, category_interval: parseInt(e.target.value) })} />
+                                    <label className="text-xs font-black text-gray-400">segundos</label>
+                                </div>
+                            </div>
+
+                            <hr className="border-soft" />
+
+                            {/* Mensagem Final */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center group/tools">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">4</div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                        <button type="button" onClick={() => insertText('final_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                        <button type="button" onClick={() => insertText('final_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                        <div className="w-px h-4 bg-gray-200 mx-1" />
+                                        <button type="button" onClick={() => insertEmoji('final_message', '🛒')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛒</button>
+                                        <button type="button" onClick={() => insertEmoji('final_message', '👋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">👋</button>
+                                        <button type="button" onClick={() => insertEmoji('final_message', '💙')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">💙</button>
+                                    </div>
+                                </div>
+                                <textarea placeholder="É isso! Esses são todos os produtos disponíveis. Para comprar, responda com o código! 🛒"
+                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
+                                    value={form.final_message}
+                                    onChange={e => setForm({ ...form, final_message: e.target.value })} />
+                            </div>
+
+                            <hr className="border-soft" />
+
+                            {/* Grupos */}
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grupos de Destino</label>
+                                {groups.filter(g => g.active).length === 0 ? (
+                                    <div className="p-6 bg-soft rounded-2xl text-center text-sm font-bold text-gray-400">
+                                        Nenhum grupo ativo. Cadastre grupos na aba "Grupos".
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {groups.filter(g => g.active).map(group => (
+                                            <button key={group.id} type="button"
+                                                onClick={() => toggleGroupInForm(group.id)}
+                                                className={`p-4 rounded-2xl border-2 transition-all text-left ${form.group_ids.includes(group.id)
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-soft hover:border-primary/20 bg-soft"}`}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${form.group_ids.includes(group.id) ? "border-primary bg-primary" : "border-gray-300"}`}>
+                                                        {form.group_ids.includes(group.id) && <CheckCircle2 size={10} className="text-white" />}
+                                                    </div>
+                                                    <span className="font-black text-sm text-muted-text">{group.name}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-4 pt-2">
+                                <Button variant="outline" className="flex-1 h-14 rounded-full font-black"
+                                    onClick={() => setShowModal(false)} disabled={saving}>
+                                    Cancelar
+                                </Button>
+                                <Button className="flex-1 h-14 rounded-full shadow-vibrant font-black gap-2"
+                                    onClick={handleCreateCampaign} disabled={saving}>
+                                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
+                                    {saving ? "Agendando..." : "Agendar Campanha"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
