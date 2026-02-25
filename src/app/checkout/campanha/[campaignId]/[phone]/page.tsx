@@ -106,6 +106,8 @@ export default function CampaignCartPage({
                         // Tem pedido criado mas não pago — mostrar tela de pagamento
                         const order = pendingOrders[0];
                         setPendingOrder(order);
+
+                        // Setar dados do PIX se existirem (se o Asaas funcionou)
                         if (order.pix_qr_code || order.pix_payload) {
                             setPixData({
                                 qrCode: order.pix_qr_code,
@@ -340,13 +342,29 @@ export default function CampaignCartPage({
                     {pendingOrder.asaas_invoice_url && (
                         <a
                             href={pendingOrder.asaas_invoice_url}
-                            className="block w-full py-4 bg-primary text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-lg"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full py-4 bg-primary text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-lg text-center"
                         >
                             Ir para Pagamento →
                         </a>
                     )}
+                    {pendingOrder.pix_qr_code && (
+                        <button
+                            onClick={() => {
+                                setPixData({
+                                    qrCode: pendingOrder.pix_qr_code,
+                                    qrCodePayload: pendingOrder.pix_payload,
+                                    invoiceUrl: pendingOrder.asaas_invoice_url,
+                                });
+                            }}
+                            className="w-full mt-3 py-4 bg-green-100 text-green-600 font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-green-200 transition-all text-center"
+                        >
+                            Ver QR Code PIX 💠
+                        </button>
+                    )}
                     <p className="text-gray-400 font-bold text-xs mt-4">
-                        Link de pagamento também foi enviado no seu WhatsApp.
+                        O link de pagamento também foi enviado para o seu WhatsApp.
                     </p>
                 </div>
             </div>
@@ -560,9 +578,9 @@ export default function CampaignCartPage({
                             className="w-full py-5 bg-primary text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-primary/90 active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                         >
                             {confirming ? (
-                                <><Loader2 size={20} className="animate-spin" /> Confirmando...</>
+                                <><Loader2 size={20} className="animate-spin" /> Finalizando...</>
                             ) : (
-                                <><CheckCircle2 size={20} /> Confirmar Pedido</>
+                                <><CheckCircle2 size={20} /> Finalizar Pedido</>
                             )}
                         </button>
                         <p className="text-center text-xs text-gray-400 font-bold mt-4">

@@ -140,6 +140,7 @@ export async function POST(req: Request) {
         } catch (err: any) {
             asaasError = err?.message || 'Erro desconhecido no Asaas';
             console.error('[CampaignConfirm] ⚠️ ERRO ASAAS — pagamento não gerado:', asaasError);
+            console.error('[CampaignConfirm] 🔍 Detalhes do erro Asaas:', JSON.stringify(err, null, 2));
         }
 
         // 9. Enviar DM de confirmação via WhatsApp
