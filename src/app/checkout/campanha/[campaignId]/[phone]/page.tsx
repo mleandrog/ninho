@@ -17,6 +17,7 @@ export default function CampaignCartPage({
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
+    const [alreadyCompleted, setAlreadyCompleted] = useState(false);
 
     const [deliveryType, setDeliveryType] = useState<'delivery' | 'sacola'>('sacola');
     const [paymentMethod, setPaymentMethod] = useState<'pix' | 'link'>('pix');
@@ -47,6 +48,21 @@ export default function CampaignCartPage({
             toast.error('Erro ao carregar carrinho.');
         } else {
             setItems(data || []);
+
+            // Se carrinho vazio, verificar se os itens já foram processados
+            if (!data || data.length === 0) {
+                const { data: completedItems } = await supabase
+                    .from('priority_queue')
+                    .select('id')
+                    .eq('campaign_id', campaignId)
+                    .eq('customer_phone', phone)
+                    .eq('status', 'completed')
+                    .limit(1);
+
+                if (completedItems && completedItems.length > 0) {
+                    setAlreadyCompleted(true);
+                }
+            }
         }
         setLoading(false);
     };
@@ -164,10 +180,20 @@ export default function CampaignCartPage({
                 {/* Items */}
                 <div className="space-y-3 mb-6">
                     {items.length === 0 ? (
-                        <div className="bg-white rounded-3xl p-10 text-center">
-                            <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-400 font-bold">Nenhum produto no carrinho</p>
-                        </div>
+                        alreadyCompleted ? (
+                            <div className="bg-white rounded-3xl p-10 text-center">
+                                <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                                <p className="text-gray-700 font-black text-lg mb-2">Pedido já realizado! ✅</p>
+                                <p className="text-gray-400 font-medium text-sm">
+                                    Você já confirmou este pedido anteriormente. Se precisar de ajuda, entre em contato pelo WhatsApp.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-3xl p-10 text-center">
+                                <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-400 font-bold">Nenhum produto no carrinho</p>
+                            </div>
+                        )
                     ) : items.map(item => (
                         <div key={item.id} className="bg-white rounded-3xl p-5 flex items-center gap-4 shadow-sm">
                             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-soft shrink-0">
