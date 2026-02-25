@@ -193,10 +193,9 @@ export default function CampaignCartPage({
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao confirmar pedido.');
 
-            toast.success('Pedido reservado! 🎉');
-
             // PIX: mostrar QR Code na tela
             if (data.payment?.type === 'pix' && (data.payment?.qrCode || data.payment?.qrCodePayload)) {
+                toast.success('Pedido reservado! Agora finalize o pagamento via PIX. 💛');
                 setPixData({
                     qrCode: data.payment.qrCode,
                     qrCodePayload: data.payment.qrCodePayload,
@@ -209,11 +208,19 @@ export default function CampaignCartPage({
 
             // Outros métodos: redirecionar para link da fatura
             if (data.payment?.invoiceUrl) {
+                toast.success('Pedido confirmado! Redirecionando para pagamento...');
                 setTimeout(() => { window.location.replace(data.payment.invoiceUrl); }, 150);
                 return;
             }
 
-            toast.error('Pedido criado, mas link de pagamento não disponível. Verifique seu WhatsApp.');
+            // Asaas falhou mas pedido foi criado — mostrar tela de pendingOrder (nunca exibir erro ao cliente)
+            toast.success('Pedido reservado! Conclua o pagamento. 💛');
+            setPendingOrder({
+                order_number: data.orderNumber,
+                total_amount: finalTotal,
+                asaas_invoice_url: data.payment?.invoiceUrl || null,
+            });
+            setItems([]);
         } catch (err: any) {
             toast.error(err.message);
         } finally {

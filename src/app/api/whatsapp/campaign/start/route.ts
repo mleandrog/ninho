@@ -90,6 +90,18 @@ export async function POST(req: Request) {
                 // 3. Disparar produtos
                 let productsSent = 0;
                 for (const product of products) {
+                    // Verificar se a campanha ainda está ativa antes de cada envio
+                    const { data: currentStatus } = await supabase
+                        .from("whatsapp_campaigns")
+                        .select("status")
+                        .eq("id", campaignId)
+                        .single();
+
+                    if (!currentStatus || currentStatus.status !== "running") {
+                        console.log(`[Campaign ${campaignId}] Interrompida externamente. Abortando disparos após ${productsSent} produto(s) enviado(s).`);
+                        break;
+                    }
+
                     const msg = `🧸 *${product.name}*\n\n💰 R$ ${Number(product.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n\n✨ Digite *${keyword}* para reservar!`;
 
                     for (const group of groups) {
