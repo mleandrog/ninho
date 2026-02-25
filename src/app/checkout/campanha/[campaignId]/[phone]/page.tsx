@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingBag, Truck, X, CheckCircle2, Package, Loader2, Eye, MapPin, Calculator } from "lucide-react";
+import { ShoppingBag, Truck, X, Package, Loader2, MapPin, Calculator, CheckCircle2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { deliveryService } from "@/services/delivery";
 
@@ -17,13 +17,10 @@ export default function CampaignCartPage({
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
-    const [confirmed, setConfirmed] = useState(false);
-    const [orderNumber, setOrderNumber] = useState('');
 
     const [deliveryType, setDeliveryType] = useState<'delivery' | 'sacola'>('sacola');
     const [paymentMethod, setPaymentMethod] = useState<'pix' | 'link'>('pix');
     const [address, setAddress] = useState({ street: '', number: '', neighborhood: '', city: '', complement: '' });
-    const [paymentResult, setPaymentResult] = useState<any>(null);
     const [settings, setSettings] = useState<any>(null);
     const [shippingFee, setShippingFee] = useState(0);
     const [calculating, setCalculating] = useState(false);
@@ -123,24 +120,18 @@ export default function CampaignCartPage({
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao confirmar pedido.');
 
-            // ✅ REDIRECT IMEDIATO para link de pagamento (antes de trocar a tela)
-            if (paymentMethod === 'link' && data.payment?.invoiceUrl) {
-                setOrderNumber(data.orderNumber);
-                setPaymentResult(data.payment);
-                setConfirmed(true);
-                toast.success('Pedido confirmado! Redirecionando para pagamento...');
-                // Agressivo: redireciona em 300ms para garantir que aconteça
+            // ✅ REDIRECT IMEDIATO para link de pagamento ASAAS (Para PIX e Link)
+            if (data.payment?.invoiceUrl) {
+                toast.success('Pedido reservado! Direcionando para pagamento...');
+                // Agressivo: redireciona em 150ms para garantir que aconteça
                 setTimeout(() => {
                     window.location.replace(data.payment.invoiceUrl);
-                }, 300);
-                return; // Sai imediatamente para não continuar o fluxo
+                }, 150);
+                return; // Sai imediatamente para não renderizar nada mais
             }
 
-            // Para PIX: mostra tela de confirmação com QR code
-            setOrderNumber(data.orderNumber);
-            setPaymentResult(data.payment);
-            setConfirmed(true);
-            toast.success('Pedido confirmado! Pague o PIX para garantir o produto.');
+            // Fallback apenas se o Asaas não gerar link de cobrança por algum erro
+            toast.error('Erro ao gerar link de pagamento. Tente novamente.');
         } catch (err: any) {
             toast.error(err.message);
         } finally {
@@ -156,60 +147,7 @@ export default function CampaignCartPage({
         );
     }
 
-    if (confirmed) {
-        return (
-            <div className="min-h-screen bg-soft flex items-center justify-center p-6">
-                <div className="bg-white rounded-[3rem] p-10 max-w-md w-full text-center shadow-xl">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <CheckCircle2 className="w-10 h-10 text-green-500" />
-                    </div>
-                    <h1 className="text-3xl font-black text-gray-800 mb-2">Pedido Confirmado!</h1>
-                    <p className="text-gray-500 font-bold mb-6">
-                        Pedido <span className="text-primary">#{orderNumber}</span> recebido com sucesso.
-                    </p>
-
-                    {paymentResult?.type === 'pix' && paymentResult.qrCode && (
-                        <div className="bg-soft p-6 rounded-3xl mb-6">
-                            <p className="text-xs font-black uppercase text-gray-400 mb-4 tracking-widest text-[#E11D48]">
-                                ⚠️ ATENÇÃO: PAGUE AGORA PARA GARANTIR!
-                            </p>
-                            <img
-                                src={`data:image/png;base64,${paymentResult.qrCode}`}
-                                alt="QR Code Pix"
-                                className="w-48 h-48 mx-auto mb-4 rounded-xl shadow-sm"
-                            />
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(paymentResult.qrCodePayload);
-                                    toast.success('Código PIX copiado!');
-                                }}
-                                className="w-full py-3 bg-white text-primary font-black text-xs uppercase rounded-xl border-2 border-primary/20 hover:bg-primary/5 transition-all"
-                            >
-                                Copiar Código PIX
-                            </button>
-                        </div>
-                    )}
-
-                    {paymentResult?.invoiceUrl && (
-                        <div className="mb-4">
-                            <a
-                                href={paymentResult.invoiceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full py-4 flex items-center justify-center gap-2 bg-primary text-white font-black text-sm uppercase rounded-2xl hover:bg-primary/90 transition-all shadow-lg"
-                            >
-                                <Eye size={20} /> Concluir Pagamento no Asaas
-                            </a>
-                        </div>
-                    )}
-
-                    <p className="text-gray-400 text-sm leading-relaxed mt-4 font-bold">
-                        Enviamos o link também pro seu WhatsApp caso perca essa página. Mas não demore!
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    // Tela de Confirmação Removida - Redirecionamento Direto para Asaas.
 
     return (
         <div className="min-h-screen bg-soft py-10 px-4">
