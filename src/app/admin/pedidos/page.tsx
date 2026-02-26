@@ -146,6 +146,10 @@ export default function AdminOrdersPage() {
         });
     }, [orders, bags, activeTab, search, filterStatus, filterFrom, filterTo]);
 
+    const bagOrdersPendingCount = useMemo(() => {
+        return orders.filter(o => o.order_number?.startsWith('BAG') && o.status === 'paid').length;
+    }, [orders]);
+
     const hasFilters = search || filterStatus || filterFrom || filterTo;
 
     return (
@@ -159,6 +163,12 @@ export default function AdminOrdersPage() {
                         </h1>
                         <p className="text-gray-400 font-bold mt-1">
                             {activeTab === "pedidos" ? "Gestão de Pedidos" : "Sacolas em Aberto"}
+                            {activeTab === "pedidos" && bagOrdersPendingCount > 0 && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest mt-2 animate-bounce">
+                                    <ShoppingBag size={10} />
+                                    {bagOrdersPendingCount} sacola(s) pronta(s) para envio
+                                </span>
+                            )}
                         </p>
                     </div>
 
@@ -334,6 +344,11 @@ export default function AdminOrdersPage() {
                                                 ? `#${item.order_number || item.id.slice(0, 8).toUpperCase()} `
                                                 : `#${item.id.slice(0, 8).toUpperCase()} `}
                                         </span>
+                                        {activeTab === "pedidos" && item.order_number?.startsWith('BAG') && (
+                                            <span className="w-fit px-2 py-0.5 bg-purple-50 text-purple-600 text-[8px] font-black rounded-md uppercase tracking-widest border border-purple-100">
+                                                Sacola
+                                            </span>
+                                        )}
                                         {activeTab === "sacolas" && (
                                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                                 {item.customer_phone || "Sem número"}
