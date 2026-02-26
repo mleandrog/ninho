@@ -36,7 +36,7 @@ export async function POST(req: Request) {
                 const endMsg = finalMsg.replace(/{categoryName}/g, categoryName);
 
                 // Executar envio em lote de forma não bloqueante (em background)
-                Promise.allSettled(groups.map(group =>
+                Promise.allSettled(groups.map((group: any) =>
                     evolutionService.sendMessage(group.group_jid, endMsg)
                 )).catch(err => console.error(`[Campaign ${campaignId}] Erro no lote de envio:`, err));
             }
