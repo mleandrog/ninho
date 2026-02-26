@@ -79,12 +79,17 @@ export async function POST(request: NextRequest) {
                 // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
             }
 
-            // Processar apenas mensagens recebidas (MESSAGES_UPSERT) e envios próprios (SEND_MESSAGE) para permitir testes do administrador
-            if (eventType !== 'MESSAGES_UPSERT' && eventType !== 'SEND_MESSAGE') {
+            // Processar apenas mensagens recebidas (MESSAGES_UPSERT)
+            if (eventType !== 'MESSAGES_UPSERT') {
                 return NextResponse.json({ status: 'ignored', reason: `event_ignored: ${eventType}` });
             }
 
-            const isFromMe = data?.key?.fromMe === true;
+            // Ignorar mensagens enviadas pelo próprio bot ANTES de qualquer processamento (evita loop e dados corrompidos)
+            if (data?.key?.fromMe) {
+                return NextResponse.json({ status: 'ignored', reason: 'fromMe' });
+            }
+
+            const isFromMe = false; // fromMe já foi descartado acima
 
             // Extração robusta da mensagem (Evolution v2)
             const message =
@@ -96,8 +101,8 @@ export async function POST(request: NextRequest) {
             const phone = data.key?.remoteJid;
 
             // Extrair o JID do participante (quem enviou a mensagem dentro do grupo)
-            // Em grupos, participant é quem enviou. Em DMs, é o próprio remoteJid. Para mensagens do próprio bot (fromMe), usamos o sender da instância.
-            const rawParticipant = data.key?.participant || data.participant || data.key?.participantAlt || (data?.key?.fromMe ? payload.sender : null);
+            // Em grupos, participant é quem enviou. Algumas novas políticas do WhatsApp enviam LIDs em participant e o número real em participantAlt.
+            const rawParticipant = data.key?.participant || data.key?.participantAlt || data.participant;
             // leadPhoneRaw: JID completo para envio de mensagem (ex: 5511999999999@s.whatsapp.net ou 51067261812803@lid)
             // leadPhoneClean: número limpo apenas para identificação/armazenamento
             const leadPhoneRaw = rawParticipant || phone || '';
@@ -290,10 +295,6 @@ export async function POST(request: NextRequest) {
             }
             // --- FIM DA LÓGICA DE CAPTURA ---
 
-            // Ignorar mensagens enviadas pelo próprio bot/usuário para a IA (evita loop infinito de respostas)
-            if (isFromMe) {
-                return NextResponse.json({ status: 'success', note: 'message_from_bot_ignored_for_ai' });
-            }
 
             const cleanPhone = phone.replace('@s.whatsapp.net', '').replace('@g.us', '');
 
