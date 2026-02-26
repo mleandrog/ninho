@@ -123,8 +123,12 @@ export async function POST(request: NextRequest) {
             const keyword = (settings?.keyword || 'ninho').toLowerCase();
 
             const lowerMessage = message.trim().toLowerCase();
-            // GATILHO: A mensagem deve ser exatamente a palavra-chave (ignorando espaços antes/depois e maiúsculas)
-            const hasKeyword = lowerMessage === keyword;
+            // GATILHO: Limpa pontuações como "." "!" "*" "_" para não falhar caso o usuário digite "Ninho!" 
+            const cleanMessage = lowerMessage.replace(/[^\w\sÀ-ÿ]/gi, '').trim();
+            const cleanKeyword = keyword.replace(/[^\w\sÀ-ÿ]/gi, '').trim();
+
+            // A mensagem deve ser exatamente a palavra-chave (ignorando espaços, maiúsculas e pontuações)
+            const hasKeyword = cleanMessage === cleanKeyword;
 
             if (hasKeyword) {
                 console.log(`[Lead Capture] Palavra-chave estrita detectada: "${message}"`);

@@ -92,6 +92,11 @@ export default function AdminWhatsAppDashboard() {
     const [connecting, setConnecting] = useState(false);
     const [isStopping, setIsStopping] = useState<number | null>(null);
 
+    // Modal de Confirmação customizado (Substitui window.confirm)
+    const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean, action: 'stop' | 'delete' | null, id: number | string | null, title: string, description: string }>({
+        isOpen: false, action: null, id: null, title: '', description: ''
+    });
+
     // Groups tab state
     const [newGroup, setNewGroup] = useState({ name: "", group_jid: "" });
     const [availableWhatsAppGroups, setAvailableWhatsAppGroups] = useState<any[]>([]);
@@ -294,7 +299,17 @@ export default function AdminWhatsAppDashboard() {
     };
 
     const handleStopCampaign = async (id: number) => {
-        if (!confirm("Deseja interromper esta campanha?")) return;
+        setConfirmDialog({
+            isOpen: true,
+            action: 'stop',
+            id: id,
+            title: 'Interromper Campanha',
+            description: 'Tem certeza que deseja interromper esta campanha? As mensagens finais serão enviadas em segundo plano.'
+        });
+    };
+
+    const confirmStopCampaign = async (id: number) => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
         setIsStopping(id);
         try {
             const response = await fetch("/api/whatsapp/campaign/stop", {
@@ -316,7 +331,17 @@ export default function AdminWhatsAppDashboard() {
     };
 
     const handleDeleteCampaign = async (id: number) => {
-        if (!confirm("Deseja excluir esta campanha?")) return;
+        setConfirmDialog({
+            isOpen: true,
+            action: 'delete',
+            id: id,
+            title: 'Excluir Campanha',
+            description: 'Tem certeza que deseja excluir esta campanha? Esta ação não pode ser desfeita.'
+        });
+    };
+
+    const confirmDeleteCampaign = async (id: number) => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
         try {
             await supabase.from("whatsapp_campaigns").delete().eq("id", id);
             toast.success("Campanha excluída.");
@@ -449,6 +474,14 @@ export default function AdminWhatsAppDashboard() {
             <Loader2 className="animate-spin text-primary" size={32} />
         </div>;
     }
+
+    const executeConfirmDialogAction = () => {
+        if (confirmDialog.action === 'stop' && confirmDialog.id) {
+            confirmStopCampaign(confirmDialog.id as number);
+        } else if (confirmDialog.action === 'delete' && confirmDialog.id) {
+            confirmDeleteCampaign(confirmDialog.id as number);
+        }
+    };
 
     return (
         <div className="animate-in fade-in duration-500">
@@ -1261,6 +1294,34 @@ export default function AdminWhatsAppDashboard() {
                                     onClick={handleCreateCampaign} disabled={saving}>
                                     {saving ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
                                     {saving ? "Agendando..." : "Agendar Campanha"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── MODAL DE CONFIRMAÇÃO CUSTOMIZADO ── */}
+            {confirmDialog.isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <h3 className="text-xl font-black text-muted-text mb-2">{confirmDialog.title}</h3>
+                            <p className="text-sm font-bold text-gray-400 mb-6">{confirmDialog.description}</p>
+
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 rounded-xl h-12 font-black border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                    onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    className={`flex-1 rounded-xl h-12 font-black ${confirmDialog.action === 'delete' ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'} text-white border-none`}
+                                    onClick={executeConfirmDialogAction}
+                                >
+                                    Confirmar
                                 </Button>
                             </div>
                         </div>
