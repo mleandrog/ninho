@@ -1,20 +1,32 @@
-const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
-const ASAAS_API_KEY = process.env.ASAAS_API_KEY || '';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 
-console.log(`[Asaas Service] Inicializado. Key presente: ${!!ASAAS_API_KEY}, Tamanho: ${ASAAS_API_KEY.length}`);
+let cachedSettings: { key: string, url: string } | null = null;
 
-/**
- * Serviço de integração com o gateway de pagamento ASAAS.
- * Variáveis necessárias no .env:
- *   ASAAS_API_URL = https://api-sandbox.asaas.com/api/v3 (sandbox) ou https://api.asaas.com/api/v3 (produção)
- *   ASAAS_API_KEY = Sua chave de API ASAAS
- */
 export const asaasService = {
 
+    async getCredentials() {
+        if (cachedSettings) return cachedSettings;
+
+        // Tentar buscar do banco de dados primeiro
+        const { data: settings } = await supabase
+            .from('whatsapp_settings')
+            .select('asaas_api_key, asaas_api_url')
+            .limit(1)
+            .single();
+
+        const key = settings?.asaas_api_key || process.env.ASAAS_API_KEY || '';
+        const url = settings?.asaas_api_url || process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
+
+        cachedSettings = { key, url };
+        return cachedSettings;
+    },
+
     async fetchApi(endpoint: string, method = 'GET', body?: object) {
-        const fullUrl = `${ASAAS_API_URL}${endpoint}`;
-        const keyInfo = ASAAS_API_KEY
-            ? `${ASAAS_API_KEY.substring(0, 10)}... (Tamanho: ${ASAAS_API_KEY.length})`
+        const { key, url } = await this.getCredentials();
+        const fullUrl = `${url}${endpoint}`;
+
+        const keyInfo = key
+            ? `${key.substring(0, 10)}... (Tamanho: ${key.length})`
             : 'VAZIA!';
 
         console.log(`[Asaas] ${method} ${fullUrl} | KEY: ${keyInfo}`);
@@ -23,7 +35,7 @@ export const asaasService = {
             method,
             headers: {
                 'Content-Type': 'application/json',
-                'access_token': ASAAS_API_KEY,
+                'access_token': key,
             },
             ...(body ? { body: JSON.stringify(body) } : {}),
         });
