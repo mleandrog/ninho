@@ -41,7 +41,7 @@ export default function Home() {
         .select("*")
         .eq("is_featured", true)
         .eq("available_in_store", true)
-        .eq("is_whatsapp_exclusive", false)
+        .eq("whatsapp_exclusive", false)
         .limit(4);
 
       if (error) throw error;

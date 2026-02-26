@@ -35,13 +35,10 @@ export async function POST(req: Request) {
                 console.log(`[Campaign ${campaignId}] Enviando mensagem final imediata na interrupção...`);
                 const endMsg = finalMsg.replace(/{categoryName}/g, categoryName);
 
-                for (const group of groups) {
-                    try {
-                        await evolutionService.sendMessage(group.group_jid, endMsg);
-                    } catch (err) {
-                        console.error(`[Campaign ${campaignId}] Erro ao enviar mensagem final para ${group.group_jid}:`, err);
-                    }
-                }
+                // Executar envio em lote de forma não bloqueante (em background)
+                Promise.allSettled(groups.map(group =>
+                    evolutionService.sendMessage(group.group_jid, endMsg)
+                )).catch(err => console.error(`[Campaign ${campaignId}] Erro no lote de envio:`, err));
             }
         }
 
@@ -58,12 +55,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Erro ao atualizar status da campanha" }, { status: 500 });
         }
 
-        // Consolidar carrinhos — enviar DM de revisão para cada cliente
-        await consolidateCartForCampaign(campaignId);
+        // Consolidar carrinhos — iniciar em background para não travar a resposta da requisição
+        consolidateCartForCampaign(campaignId).catch(err => {
+            console.error(`[Campaign ${campaignId}] Erro fatal consolidando carrinhos em background:`, err);
+        });
 
         return NextResponse.json({
             success: true,
-            message: "Campanha encerrada. DMs de revisão de carrinho enviadas aos clientes."
+            message: "Campanha encerrada. O processamento dos carrinhos está acontecendo em segundo plano."
         });
 
     } catch (error: any) {

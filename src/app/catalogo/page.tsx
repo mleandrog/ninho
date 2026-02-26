@@ -58,7 +58,7 @@ export default function CatalogPage() {
                 .from("products")
                 .select("*, categories(name, slug)")
                 .eq("available_in_store", true)
-                .eq("is_whatsapp_exclusive", false)
+                .eq("whatsapp_exclusive", false)
                 .in("category_id", visibleCatIds.length > 0 ? visibleCatIds : [-1]);
             setProducts(prodData || []);
         } catch (error) {

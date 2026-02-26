@@ -79,15 +79,12 @@ export async function POST(request: NextRequest) {
                 // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
             }
 
-            // Processar apenas mensagens recebidas (MESSAGES_UPSERT)
-            if (eventType !== 'MESSAGES_UPSERT') {
-                return NextResponse.json({ status: 'ignored', reason: `event_not_upsert: ${eventType}` });
+            // Processar apenas mensagens recebidas (MESSAGES_UPSERT) e envios próprios (SEND_MESSAGE) para permitir testes do administrador
+            if (eventType !== 'MESSAGES_UPSERT' && eventType !== 'SEND_MESSAGE') {
+                return NextResponse.json({ status: 'ignored', reason: `event_ignored: ${eventType}` });
             }
 
-            // Ignorar mensagens enviadas pelo próprio bot para evitar loop
-            if (data?.key?.fromMe) {
-                return NextResponse.json({ status: 'ignored', reason: 'message_from_bot' });
-            }
+            const isFromMe = data?.key?.fromMe === true;
 
             // Extração robusta da mensagem (Evolution v2)
             const message =
@@ -289,6 +286,11 @@ export async function POST(request: NextRequest) {
             }
             // --- FIM DA LÓGICA DE CAPTURA ---
 
+            // Ignorar mensagens enviadas pelo próprio bot/usuário para a IA (evita loop infinito de respostas)
+            if (isFromMe) {
+                return NextResponse.json({ status: 'success', note: 'message_from_bot_ignored_for_ai' });
+            }
+
             const cleanPhone = phone.replace('@s.whatsapp.net', '').replace('@g.us', '');
 
             // Chamar API de chat internamente
@@ -318,6 +320,7 @@ export async function POST(request: NextRequest) {
             }
 
             return NextResponse.json({ status: 'success' });
+
         } catch (error: any) {
             console.error('Erro no webhook WhatsApp:', error);
             return NextResponse.json(
