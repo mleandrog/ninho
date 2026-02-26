@@ -404,7 +404,7 @@ export default function AdminOrdersPage() {
                                             )}
                                         </div>
 
-                                        {activeTab === "pedidos" && item.status !== "canceled" && (item.asaas_invoice_url || item.pix_payload) && (
+                                        {activeTab === "pedidos" && item.status === "pending" && (item.asaas_invoice_url || item.pix_payload) && (
                                             <button
                                                 onClick={() => handleResendInvoice(item.id)}
                                                 className="w-12 h-12 lg:w-10 lg:h-10 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-all"
