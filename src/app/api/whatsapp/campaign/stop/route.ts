@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
+import { evolutionService } from "@/services/evolution";
 import { consolidateCartForCampaign } from "@/services/consolidateCart";
 
 export async function POST(req: Request) {
