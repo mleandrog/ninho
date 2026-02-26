@@ -46,6 +46,10 @@
   --radius-4xl: 4rem;
   --radius-full: 9999px;
 
+  /* Mobile Optimized Radius */
+  --radius-mobile: 1rem;
+  --radius-mobile-lg: 1.5rem;
+
   --animate-float: float 3s ease-in-out infinite;
   --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
   --animate-shimmer: shimmer 2s infinite linear;
@@ -142,4 +146,19 @@
 
 .category-circle:hover {
   transform: scale(1.1) rotate(5deg);
+}
+
+/* Dense List Utilities */
+.dense-row {
+  @apply flex items-center gap-3 py-3 px-4 bg-white border-b border-gray-50 last:border-0 transition-colors hover:bg-gray-50;
+}
+
+.compact-header {
+  @apply sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between;
+}
+
+@media (max-width: 768px) {
+  .mobile-optimized-card {
+    @apply rounded-2xl p-4 shadow-sm border border-gray-100;
+  }
 }

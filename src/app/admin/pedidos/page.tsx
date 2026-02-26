@@ -154,26 +154,26 @@ export default function AdminOrdersPage() {
 
     return (
         <div className="flex flex-col flex-1 animate-in fade-in duration-500">
-            {/* Header */}
-            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">
+            {/* Header - Mais compacto */}
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 mb-6 sm:mb-8 lg:mb-10">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
                     <div>
-                        <h1 className="text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">
                             {activeTab === "pedidos" ? "Vendas" : "Carrinhos"}
                         </h1>
-                        <p className="text-gray-400 font-bold mt-1">
+                        <p className="text-[9px] sm:text-xs lg:text-sm text-gray-400 font-bold mt-0.5 uppercase tracking-widest leading-tight">
                             {activeTab === "pedidos" ? "Gestão de Pedidos" : "Sacolas em Aberto"}
                             {activeTab === "pedidos" && bagOrdersPendingCount > 0 && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest mt-2 animate-bounce">
-                                    <ShoppingBag size={10} />
-                                    {bagOrdersPendingCount} sacola(s) pronta(s) para envio
+                                <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-50 text-purple-600 rounded-full text-[8px] sm:text-[9px] lg:text-[10px] font-black uppercase tracking-widest mt-1 sm:mt-2 animate-bounce">
+                                    <ShoppingBag size={10} className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                                    {bagOrdersPendingCount} prontas para envio
                                 </span>
                             )}
                         </p>
                     </div>
 
-                    {/* Tabs */}
-                    <div className="flex bg-white p-1.5 rounded-2xl lg:rounded-[2rem] shadow-premium border border-white gap-1 transition-all w-full sm:w-auto overflow-x-auto">
+                    {/* Tabs - Compacto */}
+                    <div className="flex bg-white p-1 rounded-xl sm:rounded-2xl lg:rounded-[2rem] shadow-premium border border-white gap-0.5 sm:gap-1 transition-all w-full sm:w-auto overflow-x-auto scrol-hide">
                         {[
                             { id: "pedidos", label: "Pedidos", icon: Truck },
                             { id: "sacolas", label: "Sacolas", icon: ShoppingBag }
@@ -182,13 +182,13 @@ export default function AdminOrdersPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as TabType)}
                                 className={clsx(
-                                    "px-4 lg:px-8 py-3 rounded-xl lg:rounded-[1.5rem] flex items-center justify-center gap-2 lg:gap-3 transition-all font-black text-[10px] lg:text-xs uppercase tracking-widest flex-1 sm:flex-none whitespace-nowrap",
+                                    "px-3 sm:px-6 lg:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl lg:rounded-[1.5rem] flex items-center justify-center gap-2 lg:gap-3 transition-all font-black text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-widest flex-1 sm:flex-none whitespace-nowrap",
                                     activeTab === tab.id
                                         ? "bg-primary text-white shadow-lg"
                                         : "text-gray-400 hover:text-muted-text hover:bg-soft"
                                 )}
                             >
-                                <tab.icon size={16} />
+                                <tab.icon size={14} className="sm:w-4 sm:h-4" />
                                 {tab.label}
                             </button>
                         ))}
@@ -202,28 +202,28 @@ export default function AdminOrdersPage() {
                 </button>
             </header>
 
-            {/* Filtros */}
-            <div className="bg-white p-6 rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white mb-8">
-                <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+            {/* Filtros - Ultra compacto */}
+            <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl lg:rounded-[2.5rem] shadow-premium border border-white mb-4 sm:mb-6 lg:mb-8">
+                <div className="grid grid-cols-1 md:flex md:flex-row gap-2 lg:gap-4 items-stretch lg:items-center">
                     {/* Busca */}
-                    <div className="flex-1 relative">
-                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <div className="relative flex-1">
+                        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
-                            placeholder={activeTab === "pedidos" ? "Buscar por cliente ou nº..." : "Buscar por nome no WhatsApp..."}
-                            className="w-full pl-10 pr-4 py-3 bg-soft rounded-2xl border-none font-bold text-sm outline-none"
+                            placeholder={activeTab === "pedidos" ? "Buscar..." : "Nome no WhatsApp..."}
+                            className="w-full pl-9 pr-4 py-2 sm:py-2.5 lg:py-3 bg-soft rounded-lg sm:rounded-xl lg:rounded-2xl border-none font-bold text-[10px] sm:text-xs lg:text-sm outline-none"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex items-center gap-2">
                         {/* Status (Só para Pedidos) */}
                         {activeTab === "pedidos" && (
-                            <div className="relative flex-1 sm:flex-none">
-                                <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <div className="relative flex-1 md:flex-none">
+                                <Filter size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 <select
-                                    className="w-full pl-10 pr-10 py-3 bg-soft rounded-2xl border-none font-black text-sm uppercase tracking-wide outline-none appearance-none cursor-pointer min-w-[150px]"
+                                    className="w-full pl-8 pr-7 py-2 sm:py-2.5 lg:py-3 bg-soft rounded-lg sm:rounded-xl lg:rounded-2xl border-none font-black text-[8.5px] sm:text-[10px] lg:text-sm uppercase tracking-wide outline-none appearance-none cursor-pointer min-w-[90px] lg:min-w-[150px]"
                                     value={filterStatus}
                                     onChange={e => setFilterStatus(e.target.value)}
                                 >
@@ -232,23 +232,23 @@ export default function AdminOrdersPage() {
                                         <option key={key} value={key}>{cfg.label}</option>
                                     ))}
                                 </select>
-                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                             </div>
                         )}
 
                         {/* Data */}
-                        <div className="flex items-center gap-2 bg-soft px-4 py-3 lg:py-1.5 rounded-2xl flex-1 sm:flex-none">
-                            <CalendarIcon size={14} className="text-gray-400 shrink-0" />
+                        <div className="flex items-center gap-1 lg:gap-2 bg-soft px-2.5 sm:px-3 lg:px-4 py-2 sm:py-2.5 lg:py-1.5 rounded-lg sm:rounded-xl lg:rounded-2xl flex-[1.5] md:flex-none overflow-hidden h-9 sm:h-10 lg:h-auto">
+                            <CalendarIcon size={12} className="text-gray-400 shrink-0" />
                             <input
                                 type="date"
-                                className="bg-transparent border-none font-bold text-xs outline-none w-full"
+                                className="bg-transparent border-none font-bold text-[8.5px] sm:text-[10px] lg:text-xs outline-none w-full tabular-nums"
                                 value={filterFrom}
                                 onChange={e => setFilterFrom(e.target.value)}
                             />
-                            <div className="w-2 h-px bg-gray-300 mx-1 shrink-0" />
+                            <div className="w-1 h-px bg-gray-300 mx-0.5 shrink-0" />
                             <input
                                 type="date"
-                                className="bg-transparent border-none font-bold text-xs outline-none w-full"
+                                className="bg-transparent border-none font-bold text-[8.5px] sm:text-[10px] lg:text-xs outline-none w-full tabular-nums"
                                 value={filterTo}
                                 onChange={e => setFilterTo(e.target.value)}
                             />
@@ -258,11 +258,9 @@ export default function AdminOrdersPage() {
                         {hasFilters && (
                             <button
                                 onClick={clearFilters}
-                                className="h-12 w-full sm:w-12 flex items-center justify-center rounded-2xl bg-red-50 text-red-400 hover:bg-red-100 transition-all"
-                                title="Limpar Filtros"
+                                className="h-9 sm:h-10 lg:h-12 w-9 sm:w-10 lg:w-12 flex items-center justify-center rounded-lg sm:rounded-xl lg:rounded-2xl bg-red-50 text-red-400 hover:bg-red-100 transition-all shrink-0"
                             >
-                                <X size={20} className="mr-2 sm:mr-0" />
-                                <span className="sm:hidden font-black text-xs uppercase tracking-widest">Limpar Filtros</span>
+                                <X size={16} />
                             </button>
                         )}
                     </div>
@@ -272,26 +270,23 @@ export default function AdminOrdersPage() {
             {/* Conteúdo */}
             <div className="space-y-4">
                 {loading ? (
-                    <div className="bg-white p-20 rounded-3xl lg:rounded-[3rem] flex flex-col justify-center items-center shadow-premium gap-4">
-                        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Carregando dados...</span>
+                    <div className="bg-white p-12 lg:p-20 rounded-2xl lg:rounded-[3rem] flex flex-col justify-center items-center shadow-premium gap-4">
+                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando dados...</span>
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="bg-white p-12 lg:p-20 rounded-3xl lg:rounded-[3rem] flex flex-col items-center justify-center text-center shadow-premium border border-white">
-                        <div className="w-16 h-16 lg:w-20 lg:h-20 bg-soft rounded-2xl lg:rounded-[2rem] flex items-center justify-center mb-6">
+                    <div className="bg-white p-12 lg:p-20 rounded-2xl lg:rounded-[3rem] flex flex-col items-center justify-center text-center shadow-premium border border-white">
+                        <div className="w-16 lg:w-20 h-16 lg:h-20 bg-soft rounded-2xl lg:rounded-[2rem] flex items-center justify-center mb-6">
                             {activeTab === "pedidos" ? <Truck size={32} className="text-gray-300" /> : <ShoppingBag size={32} className="text-gray-300" />}
                         </div>
-                        <h3 className="text-xl font-black text-muted-text mb-2">
+                        <h3 className="text-lg lg:text-xl font-black text-muted-text mb-2 text-lowercase tracking-tighter">
                             {hasFilters ? "Nenhum resultado" : (activeTab === "pedidos" ? "Sem pedidos ainda" : "Nenhuma sacola aberta")}
                         </h3>
-                        <p className="text-gray-400 font-bold text-sm max-w-xs">
-                            {hasFilters ? "Tente ajustar seus filtros para encontrar o que procura." : (activeTab === "pedidos" ? "As vendas realizadas aparecerão aqui." : "Quando clientes iniciarem carrinhos, eles aparecerão aqui.")}
-                        </p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
-                        {/* Header hidden on mobile */}
-                        <div className="hidden lg:grid grid-cols-[3rem_1.5fr_1.5fr_1fr_1fr_auto] gap-6 px-8 py-2">
+                    <div className="bg-white rounded-2xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
+                        {/* Desktop Header */}
+                        <div className="hidden lg:grid grid-cols-[3rem_1.5fr_1.5fr_1fr_1fr_auto] gap-6 px-8 py-3 border-b border-gray-50 bg-soft/50">
                             <div />
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeTab === "pedidos" ? "Pedido" : "WhatsApp"}</span>
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente</span>
@@ -300,131 +295,115 @@ export default function AdminOrdersPage() {
                             <div />
                         </div>
 
-                        {filtered.map(item => {
-                            const status = activeTab === "pedidos" ? (STATUS_CONFIG[item.status] || STATUS_CONFIG.pending) : null;
-                            const Icon = status?.icon || ShoppingBag;
+                        <div className="divide-y divide-gray-50">
+                            {filtered.map(item => {
+                                const status = activeTab === "pedidos" ? (STATUS_CONFIG[item.status] || STATUS_CONFIG.pending) : null;
+                                const Icon = status?.icon || ShoppingBag;
 
-                            return (
-                                <div
-                                    key={item.id}
-                                    className="flex flex-col lg:grid lg:grid-cols-[3rem_1.5fr_1.5fr_1fr_1fr_auto] gap-4 lg:gap-6 items-start lg:items-center bg-white p-6 lg:px-8 lg:py-5 rounded-3xl lg:rounded-[2rem] shadow-premium border border-white hover:border-primary/20 transition-all group"
-                                >
-                                    <div className="flex justify-between items-center w-full lg:w-auto">
-                                        <div className={clsx(
-                                            "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
-                                            status ? status.color : "bg-soft text-gray-400"
-                                        )}>
-                                            <Icon size={18} />
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="dense-row group lg:grid lg:grid-cols-[3rem_1.5fr_1.5fr_1fr_1fr_auto] lg:gap-6 lg:py-4 lg:px-8 border-b border-gray-50 last:border-0"
+                                    >
+                                        <div className="hidden lg:flex items-center justify-center">
+                                            <div className={clsx(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center",
+                                                status ? status.color : "bg-soft text-gray-400"
+                                            )}>
+                                                <Icon size={18} />
+                                            </div>
                                         </div>
-                                        <div className="lg:hidden flex items-center gap-2">
-                                            {activeTab === "pedidos" ? (
-                                                <select
-                                                    value={item.status}
-                                                    onChange={e => updateStatus(item.id, e.target.value)}
-                                                    className="px-3 py-1.5 bg-soft rounded-xl border-none text-[10px] font-black uppercase text-gray-500 outline-none cursor-pointer tracking-widest"
-                                                >
-                                                    {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                                                        <option key={key} value={key}>{cfg.label}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <div className="px-3 py-1.5 bg-primary/5 rounded-xl text-[10px] font-black uppercase text-primary tracking-widest">
-                                                    Ativa
+
+                                        <div className="flex-1 lg:flex-none min-w-0">
+                                            <div className="flex items-center gap-2 lg:hidden mb-0.5">
+                                                <div className={clsx(
+                                                    "w-5 h-5 rounded-lg flex items-center justify-center shrink-0",
+                                                    status ? status.color : "bg-soft text-gray-400"
+                                                )}>
+                                                    <Icon size={10} />
                                                 </div>
-                                            )}
+                                                <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest truncate">
+                                                    #{item.id.slice(0, 8).toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="font-black text-muted-text text-[11px] sm:text-sm lg:text-base truncate leading-tight">
+                                                    {activeTab === "pedidos"
+                                                        ? (item.order_number || `#${item.id.slice(0, 8).toUpperCase()}`)
+                                                        : (item.customer_phone || "Sem número")}
+                                                </span>
+                                                {activeTab === "pedidos" && item.order_number?.startsWith('BAG') && (
+                                                    <span className="px-1 py-0.5 bg-purple-50 text-purple-600 text-[7px] font-black rounded-md uppercase tracking-widest border border-purple-100 leading-none">
+                                                        Sacola
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest lg:hidden mb-1">
-                                            {activeTab === "pedidos" ? "Pedido" : "WhatsApp"}
-                                        </span>
-                                        <span className="font-black text-muted-text">
-                                            {activeTab === "pedidos"
-                                                ? `#${item.order_number || item.id.slice(0, 8).toUpperCase()} `
-                                                : `#${item.id.slice(0, 8).toUpperCase()} `}
-                                        </span>
-                                        {activeTab === "pedidos" && item.order_number?.startsWith('BAG') && (
-                                            <span className="w-fit px-2 py-0.5 bg-purple-50 text-purple-600 text-[8px] font-black rounded-md uppercase tracking-widest border border-purple-100">
-                                                Sacola
-                                            </span>
-                                        )}
-                                        {activeTab === "sacolas" && (
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                {item.customer_phone || "Sem número"}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="flex flex-col lg:flex-row lg:items-center gap-2 w-full">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest lg:hidden">Cliente</span>
-                                        <div className="flex items-center gap-2 lg:bg-transparent bg-soft/50 p-2 lg:p-0 rounded-xl">
-                                            <div className="w-8 h-8 rounded-full bg-soft flex items-center justify-center text-gray-400 shrink-0">
+                                        <div className="flex-1 lg:flex-none flex items-center gap-1.5 min-w-0">
+                                            <div className="hidden lg:flex w-8 h-8 rounded-full bg-soft items-center justify-center text-gray-400 shrink-0">
                                                 <User size={14} />
                                             </div>
-                                            <span className="font-bold text-sm text-gray-500 truncate">
+                                            <span className="font-bold text-[10px] sm:text-xs lg:text-sm text-gray-400 truncate leading-tight">
                                                 {item.profiles?.full_name || item.customer_name || "Desconhecido"}
                                             </span>
                                         </div>
-                                    </div>
 
-                                    <div className="flex flex-col w-full lg:w-auto">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest lg:hidden mb-1">Data</span>
-                                        <div className="flex lg:flex-col gap-2 lg:gap-0 items-center lg:items-start text-xs font-black text-muted-text">
-                                            <span>{new Date(item.created_at).toLocaleDateString("pt-BR")}</span>
+                                        <div className="hidden lg:flex flex-col">
+                                            <span className="text-xs font-black text-muted-text">{new Date(item.created_at).toLocaleDateString("pt-BR")}</span>
                                             <span className="text-[10px] font-bold text-gray-300">
                                                 {new Date(item.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                                             </span>
                                         </div>
-                                    </div>
 
-                                    <div className="flex flex-col w-full lg:w-auto">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest lg:hidden mb-1">Total</span>
-                                        <span className="font-black text-primary text-xl lg:text-lg">
-                                            R$ {Number(item.total_amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center justify-end gap-3 w-full lg:w-auto mt-2 lg:mt-0 pt-4 lg:pt-0 border-t lg:border-none border-gray-50">
-                                        <div className="hidden lg:block">
-                                            {activeTab === "pedidos" ? (
-                                                <select
-                                                    value={item.status}
-                                                    onChange={e => updateStatus(item.id, e.target.value)}
-                                                    className="px-4 py-2 bg-soft rounded-xl border-none text-[10px] font-black uppercase text-gray-500 focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer tracking-widest"
-                                                >
-                                                    {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                                                        <option key={key} value={key}>{cfg.label}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <div className="px-4 py-2 bg-primary/5 rounded-xl text-[10px] font-black uppercase text-primary tracking-widest">
-                                                    Ativa
-                                                </div>
-                                            )}
+                                        <div className="text-right flex flex-col items-end">
+                                            <span className="font-black text-muted-text text-xs sm:text-sm lg:text-lg leading-tight">
+                                                R$ {Number(item.total_amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                            </span>
+                                            <div className="lg:hidden text-[7.5px] font-bold text-gray-300 uppercase tracking-widest leading-none mt-0.5">
+                                                {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                                            </div>
                                         </div>
 
-                                        {activeTab === "pedidos" && item.status === "pending" && (item.asaas_invoice_url || item.pix_payload) && (
-                                            <button
-                                                onClick={() => handleResendInvoice(item.id)}
-                                                className="w-12 h-12 lg:w-10 lg:h-10 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-all"
-                                                title="Reenviar Fatura via WhatsApp"
-                                            >
-                                                <MessageSquare size={18} />
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 shrink-0 ml-2">
+                                            <div className="flex items-center gap-2">
+                                                {activeTab === "pedidos" ? (
+                                                    <select
+                                                        value={item.status}
+                                                        onChange={e => updateStatus(item.id, e.target.value)}
+                                                        className="px-1.5 py-1.5 lg:px-4 lg:py-2 bg-soft rounded-lg lg:rounded-xl border-none text-[7.5px] sm:text-[9px] lg:text-[10px] font-black uppercase text-gray-500 outline-none cursor-pointer tracking-widest max-w-[70px] sm:max-w-none"
+                                                    >
+                                                        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                                                            <option key={key} value={key}>{cfg.label}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <div className="hidden sm:block px-3 py-1.5 bg-primary/5 rounded-lg text-[9px] font-black uppercase text-primary tracking-widest">
+                                                        Ativa
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                        <button
-                                            onClick={() => activeTab === 'sacolas' ? setSelectedBag(item) : undefined}
-                                            className="w-12 h-12 lg:w-10 lg:h-10 rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all"
-                                            title="Ver Detalhes"
-                                        >
-                                            <Eye size={18} />
-                                        </button>
+                                            {activeTab === "pedidos" && item.status === "pending" && (item.asaas_invoice_url || item.pix_payload) && (
+                                                <button
+                                                    onClick={() => handleResendInvoice(item.id)}
+                                                    className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-all shrink-0"
+                                                >
+                                                    <MessageSquare size={12} className="sm:w-3.5 sm:h-3.5" />
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => activeTab === 'sacolas' ? setSelectedBag(item) : undefined}
+                                                className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all shrink-0"
+                                            >
+                                                <Eye size={12} className="sm:w-3.5 sm:h-3.5" />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>

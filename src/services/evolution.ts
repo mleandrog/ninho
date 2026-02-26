@@ -6,11 +6,14 @@ export const evolutionService = {
     async sendMessage(phone: string, text: string) {
         try {
             console.log(`[Evolution] Enviando texto para ${phone}...`);
-            const response = await fetch(`${EVOLUTION_API_URL}/message/sendText/${INSTANCE_NAME}`, {
+            const apiUrl = `${EVOLUTION_API_URL}/message/sendText/${INSTANCE_NAME}`;
+            const apiKey = EVOLUTION_API_KEY || '';
+
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': EVOLUTION_API_KEY || '',
+                    'apikey': apiKey,
                 },
                 body: JSON.stringify({
                     number: phone,
@@ -21,7 +24,7 @@ export const evolutionService = {
             });
 
             const data = await response.json();
-            console.log(`[Evolution] Resposta sendMessage:`, JSON.stringify(data));
+            console.log(`[Evolution] Resposta sendMessage (${phone}):`, JSON.stringify(data));
             return data;
         } catch (error) {
             console.error('Erro ao enviar mensagem WhatsApp:', error);

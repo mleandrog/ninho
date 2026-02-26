@@ -168,24 +168,24 @@ export default function AdminClientesPage() {
 
     return (
         <div className="animate-in fade-in duration-500">
-            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 mb-6 sm:mb-8 lg:mb-10">
                 <div>
-                    <h1 className="text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">Clientes</h1>
-                    <p className="text-gray-400 font-bold mt-1">{customers.length} clientes cadastrados</p>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">Clientes</h1>
+                    <p className="text-[9px] sm:text-xs lg:text-sm text-gray-400 font-bold mt-0.5 uppercase tracking-widest leading-tight">{customers.length} cadastrados</p>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex bg-white p-1.5 rounded-2xl lg:rounded-[2rem] shadow-premium border border-white gap-1 transition-all w-full lg:w-auto overflow-x-auto">
+                {/* Tabs - Compacto */}
+                <div className="flex bg-white p-1 rounded-xl sm:rounded-2xl lg:rounded-[2rem] shadow-premium border border-white gap-0.5 sm:gap-1 transition-all w-full lg:w-auto overflow-x-auto scrol-hide">
                     {(['clientes', 'niveis'] as const).map(t => (
                         <button
                             key={t}
                             onClick={() => setTab(t)}
                             className={clsx(
-                                "px-6 lg:px-8 py-3 rounded-xl lg:rounded-[1.5rem] flex items-center justify-center gap-2 lg:gap-3 transition-all font-black text-[10px] lg:text-xs uppercase tracking-widest flex-1 lg:flex-none whitespace-nowrap",
+                                "px-4 lg:px-8 py-2 md:py-3 rounded-lg sm:rounded-xl lg:rounded-[1.5rem] flex items-center justify-center gap-2 lg:gap-3 transition-all font-black text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-widest flex-1 lg:flex-none whitespace-nowrap",
                                 tab === t ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-muted-text hover:bg-soft"
                             )}
                         >
-                            {t === 'clientes' ? <Users size={16} /> : <Shield size={16} />}
+                            {t === 'clientes' ? <Users size={14} className="sm:w-4 sm:h-4" /> : <Shield size={14} className="sm:w-4 sm:h-4" />}
                             {t === 'clientes' ? "Clientes" : "Níveis"}
                         </button>
                     ))}
@@ -195,26 +195,27 @@ export default function AdminClientesPage() {
             {/* ======= ABA CLIENTES ======= */}
             {tab === 'clientes' && (
                 <div className="animate-in slide-in-from-bottom-2 duration-300">
-                    <div className="bg-white p-6 rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white mb-8">
-                        <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Filtros - Compacto */}
+                    <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl lg:rounded-[2.5rem] shadow-premium border border-white mb-4 sm:mb-6">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                             <div className="relative flex-1">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                                 <input
                                     type="text"
-                                    placeholder="Buscar por nome ou telefone..."
+                                    placeholder="Buscar cliente..."
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-soft rounded-2xl font-bold text-sm text-muted-text border-none focus:ring-2 focus:ring-primary/20 outline-none"
+                                    className="w-full pl-9 pr-4 py-2 sm:py-2.5 lg:py-3 bg-soft rounded-lg sm:rounded-xl lg:rounded-2xl font-bold text-[10px] sm:text-xs lg:text-sm text-muted-text border-none outline-none"
                                 />
                             </div>
                             <div className="relative">
-                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 <select
                                     value={filterLevel}
                                     onChange={e => setFilterLevel(e.target.value)}
-                                    className="w-full sm:w-auto pl-6 pr-10 py-3 rounded-2xl bg-soft font-black text-[10px] uppercase tracking-widest text-gray-500 border-none appearance-none cursor-pointer outline-none"
+                                    className="w-full sm:w-auto pl-4 pr-9 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl lg:rounded-2xl bg-soft font-black text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-500 border-none appearance-none cursor-pointer outline-none min-w-[120px]"
                                 >
-                                    <option value="">Todos os níveis</option>
+                                    <option value="">Níveis</option>
                                     {levels.map(l => (
                                         <option key={l.id} value={l.id}>{l.label}</option>
                                     ))}
@@ -223,70 +224,76 @@ export default function AdminClientesPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
-                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
-                            <table className="w-full text-left min-w-[800px]">
-                                <thead>
-                                    <tr className="bg-soft/50">
-                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Cliente</th>
-                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Telefone</th>
-                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Nível</th>
-                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Cadastro</th>
-                                        <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {loading ? (
-                                        <tr><td colSpan={5} className="text-center py-20 text-gray-400 font-bold animate-pulse">Carregando clientes...</td></tr>
-                                    ) : filtered.length === 0 ? (
-                                        <tr><td colSpan={5} className="text-center py-20 text-gray-400 font-bold">Nenhum cliente encontrado.</td></tr>
-                                    ) : filtered.map(c => {
-                                        const lvl = getLevelForCustomer(c);
-                                        return (
-                                            <tr key={c.id} className="hover:bg-soft/30 transition-colors group">
-                                                <td className="px-6 lg:px-8 py-6 cursor-pointer" onClick={() => handleOpenDetails(c)}>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm" style={{ backgroundColor: lvl?.color || '#6B7280' }}>
-                                                            {(c.full_name || '?')[0]?.toUpperCase()}
-                                                        </div>
-                                                        <span className="font-black text-muted-text">{c.full_name || 'Sem nome'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 lg:px-8 py-6 text-gray-500 font-bold text-sm tracking-tight">{c.phone || '—'}</td>
-                                                <td className="px-6 lg:px-8 py-6">
-                                                    <span
-                                                        className="inline-block px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-sm"
-                                                        style={{ backgroundColor: lvl?.color || '#6B7280' }}
-                                                    >
-                                                        {lvl?.label || 'Normal'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 lg:px-8 py-6 text-gray-400 font-bold text-xs text-center">
-                                                    {new Date(c.created_at).toLocaleDateString('pt-BR')}
-                                                </td>
-                                                <td className="px-6 lg:px-8 py-6 text-center">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <button
-                                                            onClick={() => handleOpenDetails(c)}
-                                                            className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
-                                                            title="Ver Detalhes"
-                                                        >
-                                                            <Search size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { setEditingCustomer(c); setSelectedLevelId(c.customer_level_id || ''); }}
-                                                            className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
-                                                            title="Alterar Nível"
-                                                        >
-                                                            <Shield size={18} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                    <div className="bg-white rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
+                        <div className="flex flex-col">
+                            {loading ? (
+                                <div className="text-center py-20 text-gray-400 font-bold animate-pulse">Carregando clientes...</div>
+                            ) : filtered.length === 0 ? (
+                                <div className="text-center py-20 text-gray-400 font-bold">Nenhum cliente encontrado.</div>
+                            ) : filtered.map(c => {
+                                const lvl = getLevelForCustomer(c);
+                                return (
+                                    <div
+                                        key={c.id}
+                                        className="dense-row group lg:grid lg:grid-cols-[1fr_1.2fr_120px_100px_100px] lg:gap-6 lg:py-4 lg:px-10 lg:items-center hover:bg-soft/30 transition-colors cursor-pointer border-b border-gray-50 last:border-0"
+                                        onClick={() => handleOpenDetails(c)}
+                                    >
+                                        {/* Avatar & Nome */}
+                                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                            <div
+                                                className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center text-white font-black text-[10px] sm:text-xs lg:text-sm shrink-0 shadow-sm"
+                                                style={{ backgroundColor: lvl?.color || '#6B7280' }}
+                                            >
+                                                {(c.full_name || '?')[0]?.toUpperCase()}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="font-black text-muted-text text-[11px] sm:text-sm lg:text-base truncate group-hover:text-primary transition-colors leading-tight">
+                                                    {c.full_name || 'Sem nome'}
+                                                </div>
+                                                <div className="lg:hidden text-[7.5px] font-bold text-gray-300 uppercase tracking-widest mt-0.5 leading-none">
+                                                    {c.phone || '—'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Telefone (Desktop Only) */}
+                                        <div className="hidden lg:block text-gray-500 font-bold text-sm tracking-tight truncate">
+                                            {c.phone || '—'}
+                                        </div>
+
+                                        {/* Nível */}
+                                        <div className="flex items-center justify-end lg:justify-start">
+                                            <span
+                                                className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-md sm:rounded-lg lg:rounded-xl text-[7.5px] sm:text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-white shadow-sm whitespace-nowrap leading-none"
+                                                style={{ backgroundColor: lvl?.color || '#6B7280' }}
+                                            >
+                                                {lvl?.label || 'Normal'}
+                                            </span>
+                                        </div>
+
+                                        {/* Cadastro (Desktop Only) */}
+                                        <div className="hidden lg:block text-gray-400 font-bold text-xs text-center whitespace-nowrap">
+                                            {new Date(c.created_at).toLocaleDateString('pt-BR')}
+                                        </div>
+
+                                        {/* Ações */}
+                                        <div className="flex items-center justify-end gap-1.5 sm:gap-2 ml-2">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setEditingCustomer(c); setSelectedLevelId(c.customer_level_id || ''); }}
+                                                className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-soft text-gray-400 rounded-lg lg:rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center shrink-0"
+                                                title="Alterar Nível"
+                                            >
+                                                <Shield size={12} className="sm:w-3.5 sm:h-3.5" />
+                                            </button>
+                                            <button
+                                                className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-soft text-gray-400 rounded-lg lg:rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center shrink-0"
+                                            >
+                                                <Search size={12} className="sm:w-3.5 sm:h-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

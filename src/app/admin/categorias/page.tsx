@@ -132,90 +132,89 @@ export default function AdminCategoriesPage() {
 
     return (
         <div className="animate-in fade-in duration-500">
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10 lg:mb-12">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6 mb-6 sm:mb-8 lg:mb-10">
                 <div>
-                    <h1 className="text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">Gestão de Categorias</h1>
-                    <p className="text-gray-400 font-bold mt-1">{categories.length} categorias cadastradas</p>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-muted-text lowercase tracking-tighter">Categorias</h1>
+                    <p className="text-[9px] sm:text-xs lg:text-sm text-gray-400 font-bold mt-0.5 uppercase tracking-widest leading-tight">{categories.length} cadastradas</p>
                 </div>
-                <Button className="w-full sm:w-auto h-14 px-8 rounded-2xl gap-3 shadow-vibrant" onClick={() => handleOpenModal()}>
-                    <Plus size={20} /> Nova Categoria
+                <Button className="w-full sm:w-auto h-11 sm:h-14 px-6 sm:px-8 rounded-xl sm:rounded-2xl gap-2 sm:gap-3 shadow-vibrant font-black text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap" onClick={() => handleOpenModal()}>
+                    <Plus size={16} className="sm:w-5 sm:h-5" /> Nova Categoria
                 </Button>
             </header>
 
-            <div className="bg-white rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
-                <div className="p-6 lg:p-8 border-b border-gray-50">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Buscar categoria..."
-                            className="w-full pl-12 pr-6 py-4 bg-soft rounded-2xl border-none focus:ring-2 focus:ring-primary/20 font-medium text-muted-text"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+            <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl lg:rounded-[2.5rem] shadow-premium border border-white mb-4 sm:mb-6 lg:mb-8">
+                <div className="relative max-w-md">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                    <input
+                        type="text"
+                        placeholder="Buscar categoria..."
+                        className="w-full pl-9 pr-4 py-2 sm:py-2.5 lg:py-3 bg-soft rounded-lg sm:rounded-xl lg:rounded-2xl border-none font-bold text-[10px] sm:text-xs lg:text-sm text-muted-text outline-none"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
                 </div>
+            </div>
 
-                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
-                    <table className="w-full text-left border-collapse min-w-[700px]">
-                        <thead>
-                            <tr className="bg-soft/50">
-                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Categoria</th>
-                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Acesso</th>
-                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {loading ? (
-                                <tr><td colSpan={3} className="px-8 py-20 text-center font-bold text-gray-400 animate-pulse">Carregando categorias...</td></tr>
-                            ) : filtered.length === 0 ? (
-                                <tr><td colSpan={3} className="px-8 py-20 text-center font-bold text-gray-400">Nenhuma categoria encontrada.</td></tr>
-                            ) : filtered.map(cat => (
-                                <tr key={cat.id} className="hover:bg-soft/30 transition-colors group">
-                                    <td className="px-6 lg:px-8 py-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-soft rounded-xl flex items-center justify-center shrink-0">
-                                                <FolderTree size={20} className="text-gray-400" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-black text-muted-text truncate">{cat.name}</p>
-                                                <code className="text-xs bg-soft px-2 py-0.5 rounded-lg text-gray-500 font-bold">{cat.slug}</code>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 lg:px-8 py-6">
-                                        {(!cat.allowed_levels || cat.allowed_levels.length === 0) ? (
-                                            <span className="flex items-center gap-2 text-green-500 font-bold text-sm">
-                                                <Globe size={14} /> Pública
-                                            </span>
-                                        ) : (
-                                            <div className="flex flex-wrap gap-2">
-                                                <Lock size={14} className="text-gray-400 mt-1" />
-                                                {cat.allowed_levels.map(lid => {
-                                                    const lvl = levels.find(l => l.id === lid);
-                                                    return lvl ? (
-                                                        <span key={lid} className="px-2 py-0.5 rounded-lg text-white text-xs font-black" style={{ backgroundColor: lvl.color }}>
-                                                            {lvl.label}
-                                                        </span>
-                                                    ) : null;
-                                                })}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 lg:px-8 py-6">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button onClick={() => handleOpenModal(cat)} className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm">
-                                                <Edit2 size={18} />
-                                            </button>
-                                            <button onClick={() => handleDelete(cat.id)} className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            <div className="bg-white rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
+                <div className="flex flex-col">
+                    {loading ? (
+                        <div className="px-8 py-20 text-center font-bold text-gray-400 animate-pulse">Carregando...</div>
+                    ) : filtered.length === 0 ? (
+                        <div className="px-8 py-20 text-center font-bold text-gray-400">Nenhuma encontrada.</div>
+                    ) : filtered.map(cat => (
+                        <div
+                            key={cat.id}
+                            className="dense-row group lg:grid lg:grid-cols-[1fr_1.5fr_auto] lg:gap-6 lg:py-4 lg:px-10 lg:items-center border-b border-gray-50 last:border-0 hover:bg-soft/30 transition-colors"
+                        >
+                            {/* Nome & Slug */}
+                            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-soft rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0">
+                                    <FolderTree size={14} className="text-gray-400 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-black text-muted-text text-[11px] sm:text-sm lg:text-base truncate leading-tight group-hover:text-primary transition-colors">{cat.name}</p>
+                                    <code className="text-[7.5px] sm:text-[9px] lg:text-[10px] bg-soft px-1.5 py-0.5 rounded-md text-gray-400 font-bold leading-none mt-1">{cat.slug}</code>
+                                </div>
+                            </div>
+
+                            {/* Acesso */}
+                            <div className="flex flex-wrap items-center gap-1.5 lg:gap-2 justify-end lg:justify-start">
+                                {(!cat.allowed_levels || cat.allowed_levels.length === 0) ? (
+                                    <span className="flex items-center gap-1 text-green-500 font-black text-[7.5px] sm:text-[9px] lg:text-[10px] uppercase tracking-widest leading-none">
+                                        <Globe size={10} className="sm:w-3 sm:h-3" /> Pública
+                                    </span>
+                                ) : (
+                                    <>
+                                        <Lock size={10} className="text-gray-300 sm:w-3 sm:h-3" />
+                                        {cat.allowed_levels.map(lid => {
+                                            const lvl = levels.find(l => l.id === lid);
+                                            return lvl ? (
+                                                <span key={lid} className="px-1.5 py-0.5 rounded-md text-white text-[7.5px] sm:text-[9px] lg:text-[10px] font-black uppercase tracking-widest shadow-sm leading-none" style={{ backgroundColor: lvl.color }}>
+                                                    {lvl.label}
+                                                </span>
+                                            ) : null;
+                                        })}
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Ações */}
+                            <div className="flex items-center justify-end gap-1.5 sm:gap-2 ml-2">
+                                <button
+                                    onClick={() => handleOpenModal(cat)}
+                                    className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-soft text-gray-400 rounded-lg lg:rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center shrink-0"
+                                >
+                                    <Edit2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(cat.id)}
+                                    className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-soft text-gray-400 rounded-lg lg:rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center shrink-0"
+                                >
+                                    <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 
@@ -231,12 +230,12 @@ export default function AdminCategoriesPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome da Categoria</label>
                                 <input
                                     type="text" required
-                                    className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-muted-text"
+                                    className="w-full p-3 sm:p-4 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-muted-text outline-none text-sm"
                                     value={formData.name}
                                     onChange={handleNameChange}
                                     placeholder="Ex: Roupas de Bebê"
@@ -246,7 +245,7 @@ export default function AdminCategoriesPage() {
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Slug (URL)</label>
                                 <input
                                     type="text" required readOnly
-                                    className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-gray-500 cursor-not-allowed"
+                                    className="w-full p-3 sm:p-4 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-gray-400 cursor-not-allowed text-[10px] uppercase sm:text-xs"
                                     value={formData.slug}
                                 />
                             </div>
@@ -254,35 +253,35 @@ export default function AdminCategoriesPage() {
                             {/* Controle de Acesso por Nível */}
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
-                                    Acesso Restrito (vazio = pública para todos)
+                                    Acesso Restrito
                                 </label>
-                                <div className="space-y-2">
+                                <div className="space-y-1.5 sm:space-y-2">
                                     {levels.map(lvl => (
-                                        <label key={lvl.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-soft cursor-pointer transition-colors">
+                                        <label key={lvl.id} className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-soft cursor-pointer transition-colors border border-transparent hover:border-gray-100">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedLevelIds.includes(lvl.id)}
                                                 onChange={() => toggleLevel(lvl.id)}
-                                                className="w-5 h-5 rounded accent-primary"
+                                                className="w-4 h-4 sm:w-5 sm:h-5 rounded accent-primary"
                                             />
-                                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: lvl.color }} />
-                                            <span className="font-black text-muted-text">{lvl.label}</span>
+                                            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0" style={{ backgroundColor: lvl.color }} />
+                                            <span className="font-black text-muted-text text-xs sm:text-sm">{lvl.label}</span>
                                         </label>
                                     ))}
                                 </div>
                                 {selectedLevelIds.length > 0 && (
-                                    <p className="text-xs text-amber-500 font-bold flex items-center gap-1">
-                                        <Lock size={12} /> Visível apenas para os níveis selecionados
+                                    <p className="text-[9px] sm:text-xs text-amber-500 font-bold flex items-center gap-1 mt-2">
+                                        <Lock size={12} /> Visível apenas para níveis selecionados
                                     </p>
                                 )}
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                                <Button type="button" variant="outline" className="h-14 rounded-2xl font-black lowercase" onClick={() => setShowModal(false)} disabled={saving}>
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 mb-2">
+                                <Button type="button" variant="outline" className="h-12 sm:h-14 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs" onClick={() => setShowModal(false)} disabled={saving}>
                                     Cancelar
                                 </Button>
-                                <Button type="submit" className="flex-1 h-14 rounded-2xl shadow-vibrant font-black lowercase gap-2" disabled={saving}>
-                                    {saving ? <Loader2 className="animate-spin" size={20} /> : (editingCategory ? "Atualizar" : "Cadastrar")}
+                                <Button type="submit" className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl shadow-vibrant font-black uppercase text-[10px] sm:text-xs gap-2" disabled={saving}>
+                                    {saving ? <Loader2 className="animate-spin" size={16} /> : (editingCategory ? "Atualizar" : "Cadastrar")}
                                 </Button>
                             </div>
                         </form>
