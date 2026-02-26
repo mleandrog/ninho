@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
             const phone = data.key?.remoteJid;
 
             // Extrair o JID do participante (quem enviou a mensagem dentro do grupo)
-            // Em grupos, participant é quem enviou. Em DMs, é o próprio remoteJid
-            const rawParticipant = data.key?.participant || data.key?.participantAlt;
+            // Em grupos, participant é quem enviou. Em DMs, é o próprio remoteJid. Para mensagens do próprio bot (fromMe), usamos o sender da instância.
+            const rawParticipant = data.key?.participant || data.participant || data.key?.participantAlt || (data?.key?.fromMe ? payload.sender : null);
             // leadPhoneRaw: JID completo para envio de mensagem (ex: 5511999999999@s.whatsapp.net ou 51067261812803@lid)
             // leadPhoneClean: número limpo apenas para identificação/armazenamento
             const leadPhoneRaw = rawParticipant || phone || '';
@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
             const keyword = (settings?.keyword || 'ninho').toLowerCase();
 
             const lowerMessage = message.trim().toLowerCase();
-            // GATILHO: A mensagem contém a palavra-chave ou variações de interesse
-            const hasKeyword = lowerMessage.includes(keyword) || lowerMessage.includes('quero') || lowerMessage.includes('eu quero');
+            // GATILHO: A mensagem deve ser exatamente a palavra-chave (ignorando espaços antes/depois e maiúsculas)
+            const hasKeyword = lowerMessage === keyword;
 
             if (hasKeyword) {
                 console.log(`[Lead Capture] Palavra-chave estrita detectada: "${message}"`);
