@@ -1,4 +1,4 @@
-const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://api-sandbox.asaas.com/api/v3';
+const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY || '';
 
 /**
@@ -10,7 +10,14 @@ const ASAAS_API_KEY = process.env.ASAAS_API_KEY || '';
 export const asaasService = {
 
     async fetchApi(endpoint: string, method = 'GET', body?: object) {
-        const response = await fetch(`${ASAAS_API_URL}${endpoint}`, {
+        const fullUrl = `${ASAAS_API_URL}${endpoint}`;
+        const keyInfo = ASAAS_API_KEY
+            ? `${ASAAS_API_KEY.substring(0, 10)}... (Tamanho: ${ASAAS_API_KEY.length})`
+            : 'VAZIA!';
+
+        console.log(`[Asaas] ${method} ${fullUrl} | KEY: ${keyInfo}`);
+
+        const response = await fetch(fullUrl, {
             method,
             headers: {
                 'Content-Type': 'application/json',
@@ -21,6 +28,7 @@ export const asaasService = {
 
         if (!response.ok) {
             const err = await response.text();
+            console.error(`[Asaas] ❌ Erro ${response.status} em ${fullUrl}: ${err}`);
             throw new Error(`ASAAS API Error ${response.status}: ${err}`);
         }
         return response.json();

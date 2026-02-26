@@ -92,31 +92,34 @@ export default function CampaignCartPage({
                     .limit(1);
 
                 if (completedItems && completedItems.length > 0) {
-                    // Verificar se há pedido com pagamento ainda pendente
-                    const customerPhoneClean = phone.replace(/\D/g, '');
+                    // Buscar pedido recente deste telefone (qualquer status de order, exceto pago)
                     const { data: pendingOrders } = await supabase
                         .from('orders')
                         .select('id, order_number, total_amount, asaas_invoice_url, pix_qr_code, pix_payload, payment_method, payment_status')
                         .eq('customer_phone', phone)
-                        .eq('payment_status', 'pending')
+                        .in('status', ['pending', 'processing'])
                         .order('created_at', { ascending: false })
                         .limit(1);
 
                     if (pendingOrders && pendingOrders.length > 0) {
-                        // Tem pedido criado mas não pago — mostrar tela de pagamento
                         const order = pendingOrders[0];
-                        setPendingOrder(order);
-
-                        // Setar dados do PIX se existirem (se o Asaas funcionou)
-                        if (order.pix_qr_code || order.pix_payload) {
-                            setPixData({
-                                qrCode: order.pix_qr_code,
-                                qrCodePayload: order.pix_payload,
-                                invoiceUrl: order.asaas_invoice_url,
-                            });
+                        // Se o pagamento foi confirmado, mostrar tela de pago
+                        if (order.payment_status === 'paid' || order.payment_status === 'confirmed') {
+                            setAlreadyCompleted(true);
+                        } else {
+                            // Pedido criado mas ainda não pago — mostrar tela de pagamento pendente
+                            setPendingOrder(order);
+                            if (order.pix_qr_code || order.pix_payload) {
+                                setPixData({
+                                    qrCode: order.pix_qr_code,
+                                    qrCodePayload: order.pix_payload,
+                                    invoiceUrl: order.asaas_invoice_url,
+                                });
+                            }
                         }
                     } else {
-                        setAlreadyCompleted(true);
+                        // Segurança: não exibir 'já pago' se não há pedido. Mostre reserva genérica.
+                        setPendingOrder({ order_number: 'Recente', total_amount: 0, asaas_invoice_url: null, pix_qr_code: null });
                     }
                 }
             }
