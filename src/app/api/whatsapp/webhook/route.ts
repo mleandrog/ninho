@@ -61,12 +61,10 @@ export async function POST(request: NextRequest) {
                     _headers: headers
                 }
             });
+            // Validar evento e API Key
             if (!event) {
                 return NextResponse.json({ status: 'ignored', reason: 'No event in payload' });
             }
-
-            // Normalizar evento
-            const eventType = event.toUpperCase().replace(/\./g, '_');
 
             // Validar origem (Evolution API v2 envia apikey no body ou header)
             const incomingApiKey = (request.headers.get('x-api-key') || request.headers.get('apikey') || payload.apikey || "").trim();
