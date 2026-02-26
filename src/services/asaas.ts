@@ -1,6 +1,8 @@
 const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY || '';
 
+console.log(`[Asaas Service] Inicializado. Key presente: ${!!ASAAS_API_KEY}, Tamanho: ${ASAAS_API_KEY.length}`);
+
 /**
  * Serviço de integração com o gateway de pagamento ASAAS.
  * Variáveis necessárias no .env:
