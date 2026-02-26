@@ -544,6 +544,22 @@ export default function CampaignCartPage({
                                     onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}
                                     className="w-full px-4 py-3 rounded-2xl bg-soft border border-transparent focus:border-primary/30 focus:outline-none font-bold text-gray-700"
                                 />
+
+                                <button
+                                    onClick={handleCalculateShipping}
+                                    disabled={calculating || !address.street || !address.city}
+                                    className="w-full py-4 bg-primary/10 text-primary font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {calculating ? <Loader2 size={16} className="animate-spin" /> : <Calculator size={16} />}
+                                    {shippingFee > 0 ? 'Recalcular Frete' : 'Calcular Frete'}
+                                </button>
+
+                                {shippingFee > 0 && (
+                                    <div className="p-4 bg-green-50 rounded-2xl border border-green-100 flex justify-between items-center">
+                                        <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Valor do Frete</span>
+                                        <span className="font-black text-green-600">R$ {shippingFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 

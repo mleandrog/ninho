@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [productTypes, setProductTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [showModal, setShowModal] = useState(false);
@@ -27,6 +28,7 @@ export default function AdminProductsPage() {
         is_featured: false,
         whatsapp_exclusive: false,
         size: "",
+        product_type_id: "",
         available_in_store: true,
     });
     const [customSize, setCustomSize] = useState("");
@@ -37,6 +39,7 @@ export default function AdminProductsPage() {
     useEffect(() => {
         fetchProducts();
         fetchCategories();
+        fetchProductTypes();
     }, []);
 
     const fetchProducts = async () => {
@@ -44,7 +47,7 @@ export default function AdminProductsPage() {
         try {
             const { data, error } = await supabase
                 .from("products")
-                .select("*, categories(name)")
+                .select("*, categories(name), product_types(name)")
                 .order("created_at", { ascending: false });
 
             if (error) throw error;
@@ -59,6 +62,11 @@ export default function AdminProductsPage() {
     const fetchCategories = async () => {
         const { data } = await supabase.from("categories").select("*");
         setCategories(data || []);
+    };
+
+    const fetchProductTypes = async () => {
+        const { data } = await supabase.from("product_types").select("*");
+        setProductTypes(data || []);
     };
 
     const compressImage = (file: File, size?: string): Promise<Blob> => {
@@ -108,9 +116,13 @@ export default function AdminProductsPage() {
                                 // Configurações do Overlay
                                 const ovHeight = height * 0.20; // 20% da altura
                                 const ovWidth = ovHeight * 2.6;
+
+                                // POSICIONAMENTO: CANTO INFERIOR ESQUERDO
                                 const x = 30;
                                 const y = height - ovHeight - 30;
                                 const radius = ovHeight * 0.28;
+
+                                console.log(`[Branding] Aplicando estampa em ${width}x${height} na posição x:${x}, y:${y}`);
 
                                 // Desenhar Retângulo Branco Arredondado
                                 ctx.save();
@@ -257,6 +269,7 @@ export default function AdminProductsPage() {
             is_featured: product.is_featured || false,
             whatsapp_exclusive: product.whatsapp_exclusive || false,
             size: isCustom ? 'Outros' : (product.size || ''),
+            product_type_id: product.product_type_id || '',
             available_in_store: product.available_in_store ?? true,
         });
         if (isCustom) setCustomSize(product.size);
@@ -301,6 +314,7 @@ export default function AdminProductsPage() {
             is_featured: false,
             whatsapp_exclusive: false,
             size: "",
+            product_type_id: "",
             available_in_store: true,
         });
         setCustomSize("");
@@ -361,6 +375,7 @@ export default function AdminProductsPage() {
                         <thead>
                             <tr className="bg-soft/50">
                                 <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Produto</th>
+                                <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Tipo</th>
                                 <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Tamanho</th>
                                 <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Categoria</th>
                                 <th className="px-6 lg:px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Preço</th>
@@ -407,6 +422,9 @@ export default function AdminProductsPage() {
                                                     )}
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td className="px-6 lg:px-8 py-6 font-bold text-gray-500 uppercase tracking-widest text-[10px]">
+                                            {product.product_types?.name || "—"}
                                         </td>
                                         <td className="px-6 lg:px-8 py-6">
                                             {product.size ? (
@@ -499,6 +517,20 @@ export default function AdminProductsPage() {
                                             <option value="">Selecione...</option>
                                             {categories.map(cat => (
                                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo de Produto</label>
+                                        <select
+                                            className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-muted-text"
+                                            value={formData.product_type_id}
+                                            onChange={(e) => setFormData({ ...formData, product_type_id: e.target.value })}
+                                        >
+                                            <option value="">Selecione...</option>
+                                            {productTypes.map(type => (
+                                                <option key={type.id} value={type.id}>{type.name}</option>
                                             ))}
                                         </select>
                                     </div>

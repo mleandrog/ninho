@@ -15,6 +15,7 @@ import {
     Truck,
     Users,
     MapPin,
+    Map as MapIcon,
     X
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -27,6 +28,7 @@ const menuItems = [
     { icon: Users, label: "Clientes", href: "/admin/clientes" },
     { icon: MessageSquare, label: "Campanhas", href: "/admin/whatsapp" },
     { icon: Truck, label: "Entregadores", href: "/admin/entregadores" },
+    { icon: MapIcon, label: "Rotas", href: "/admin/entregadores/rotas" },
     { icon: MapPin, label: "Zonas de Frete", href: "/admin/frete" },
     { icon: TrendingUp, label: "Relatórios", href: "/admin/relatorios" },
     { icon: Settings, label: "Configurações", href: "/admin/configuracoes" },

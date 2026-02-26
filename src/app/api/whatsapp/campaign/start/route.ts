@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
         const { data: products } = await supabase
             .from("products")
-            .select("*")
+            .select("*, product_types(name)")
             .eq("category_id", campaign.category_id)
             .eq("status", "available")
             .order("id", { ascending: true });
@@ -102,7 +102,8 @@ export async function POST(req: Request) {
                         break;
                     }
 
-                    const msg = `🧸 *${product.name}*\n\n💰 R$ ${Number(product.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n\n✨ Digite *${keyword}* para reservar!`;
+                    const productTypeName = (product as any).product_types?.name || "";
+                    const msg = `❤️ *${product.name}*\n\n🏷️ Tam: ${product.size || "—"}${productTypeName ? `\n♻️ ${productTypeName}` : ""}\n\n🛍️ *R$ ${Number(product.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*\n\n✨ Digite *${keyword}* para reservar!`;
 
                     for (const group of groups) {
                         try {

@@ -12,6 +12,38 @@ export async function POST(req: Request) {
 
         console.log(`[Campaign ${campaignId}] Interrompendo campanha e consolidando carrinhos...`);
 
+        // 1. Buscar a mensagem final e grupos antes de encerrar
+        const { data: campaign } = await supabase
+            .from("whatsapp_campaigns")
+            .select("*, whatsapp_groups(*), categories(name)")
+            .eq("id", campaignId)
+            .single();
+
+        if (campaign && campaign.status === 'running') {
+            const { data: settings } = await supabase
+                .from("whatsapp_settings")
+                .select("final_message")
+                .limit(1)
+                .single();
+
+            const finalMsg = campaign.final_message || settings?.final_message;
+            const groups = campaign.whatsapp_groups || [];
+            const categoryName = campaign.categories?.name || "esta categoria";
+
+            if (finalMsg && groups.length > 0) {
+                console.log(`[Campaign ${campaignId}] Enviando mensagem final imediata na interrupção...`);
+                const endMsg = finalMsg.replace(/{categoryName}/g, categoryName);
+
+                for (const group of groups) {
+                    try {
+                        await evolutionService.sendMessage(group.group_jid, endMsg);
+                    } catch (err) {
+                        console.error(`[Campaign ${campaignId}] Erro ao enviar mensagem final para ${group.group_jid}:`, err);
+                    }
+                }
+            }
+        }
+
         const { error } = await supabase
             .from("whatsapp_campaigns")
             .update({

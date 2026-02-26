@@ -6,22 +6,61 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
     Settings, Save, Info, MapPin, CreditCard,
-    MessageSquare, Loader2, Smartphone,
+    MessageSquare, Loader2, Smartphone, Plus, Trash2,
     Shield, Bold, Italic, ShoppingBag, LayoutTemplate, Phone, Mail
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-type TabType = "geral" | "logistica" | "pagamentos" | "whatsapp" | "sacolas" | "landing";
+type TabType = "geral" | "pagamentos" | "whatsapp" | "sacolas" | "landing" | "produtos";
 
 export default function AdminSettingsPage() {
     const [activeTab, setActiveTab] = useState<TabType>("geral");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [settings, setSettings] = useState<any>(null);
+    const [initialSettings, setInitialSettings] = useState<any>(null);
+
+    const [productTypes, setProductTypes] = useState<any[]>([]);
+    const [newProductType, setNewProductType] = useState("");
+    const [isAddingType, setIsAddingType] = useState(false);
 
     useEffect(() => {
         fetchSettings();
+        fetchProductTypes();
     }, []);
+
+    const fetchProductTypes = async () => {
+        const { data } = await supabase.from("product_types").select("*").order("name");
+        setProductTypes(data || []);
+    };
+
+    const handleAddProductType = async () => {
+        if (!newProductType.trim()) return;
+        setIsAddingType(true);
+        try {
+            const { error } = await supabase.from("product_types").insert([{ name: newProductType }]);
+            if (error) throw error;
+            setNewProductType("");
+            fetchProductTypes();
+            toast.success("Tipo de produto adicionado!");
+        } catch (error: any) {
+            toast.error("Erro ao adicionar: " + error.message);
+        } finally {
+            setIsAddingType(false);
+        }
+    };
+
+    const handleDeleteProductType = async (id: string) => {
+        if (!confirm("Excluir este tipo de produto?")) return;
+        try {
+            const { error } = await supabase.from("product_types").delete().eq("id", id);
+            if (error) throw error;
+            fetchProductTypes();
+            toast.success("Tipo removido!");
+        } catch (error: any) {
+            toast.error("Erro ao remover: " + error.message);
+        }
+    };
 
     const fetchSettings = async () => {
         try {
@@ -34,9 +73,10 @@ export default function AdminSettingsPage() {
 
             if (data && data.length > 0) {
                 setSettings(data[0]);
+                setInitialSettings(data[0]);
             } else {
                 // Inicializa com valores padrão se não houver registro
-                setSettings({
+                const defaultSettings = {
                     store_name: "Ninho Lar",
                     whatsapp_number: "",
                     keyword: "ninho",
@@ -52,8 +92,12 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                     cart_expiration_minutes: 60,
                     payment_expiration_minutes: 1440,
                     asaas_pix_enabled: true,
-                    asaas_card_enabled: false
-                });
+                    asaas_card_enabled: false,
+                    store_number: "",
+                    store_complement: ""
+                };
+                setSettings(defaultSettings);
+                setInitialSettings(defaultSettings);
             }
         } catch (error: any) {
             toast.error("Erro ao carregar configurações: " + error.message);
@@ -89,6 +133,8 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                 footer_phone: settings.footer_phone,
                 footer_email: settings.footer_email,
                 footer_about: settings.footer_about,
+                store_number: settings.store_number,
+                store_complement: settings.store_complement,
             };
 
             const { data, error } = settings.id
@@ -96,9 +142,12 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                 : await supabase.from("whatsapp_settings").insert([configData]).select().single();
 
             if (error) throw error;
-            if (data) setSettings(data);
+            if (data) {
+                setSettings(data);
+                setInitialSettings(data);
+            }
 
-            toast.success("Configurações salvas com sucesso!");
+            toast.success("Configurações salvas!");
         } catch (error: any) {
             toast.error("Erro ao salvar: " + error.message);
         } finally {
@@ -167,6 +216,8 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
         }
     };
 
+    const hasChanges = initialSettings && settings && JSON.stringify(initialSettings) !== JSON.stringify(settings);
+
     if (loading) {
         return (
             <div className="flex flex-col justify-center items-center py-20 gap-4">
@@ -198,18 +249,20 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                 </div>
 
                 <Button
-                    className="h-14 px-8 rounded-2xl font-black gap-3 shadow-vibrant"
+                    className={`h-14 px-8 rounded-2xl font-black gap-3 transition-all ${!hasChanges ? "bg-gray-200 text-gray-400 shadow-none cursor-not-allowed hover:bg-gray-200" : "shadow-vibrant"
+                        }`}
                     onClick={handleSave}
                     isLoading={saving}
+                    disabled={!hasChanges || saving}
                 >
                     <Save size={20} />
-                    Salvar Todas as Pequenas Mudanças
+                    {saving ? "Salvando..." : "Salvar"}
                 </Button>
             </header>
 
             {/* Navegação por Abas */}
             <div className="flex gap-4 mb-8 bg-white/50 p-2 rounded-[2rem] w-fit flex-wrap">
-                {(["geral", "logistica", "pagamentos", "whatsapp", "sacolas", "landing"] as TabType[]).map((tab) => (
+                {(["geral", "pagamentos", "whatsapp", "sacolas", "landing", "produtos"] as TabType[]).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -218,7 +271,7 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                             : "text-gray-400 hover:text-muted-text hover:bg-white"
                             }`}
                     >
-                        {tab === 'landing' ? '🖼️ Landing Page' : tab}
+                        {tab === 'landing' ? '🖼️ Landing Page' : tab === 'produtos' ? '🏷️ Produtos' : tab === 'geral' ? '🏠 Loja' : tab}
                     </button>
                 ))}
             </div>
@@ -260,72 +313,91 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                             </div>
                         </div>
 
-                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
-                            <Shield className="text-amber-500 flex-shrink-0" size={20} />
-                            <p className="text-xs font-bold text-amber-700 leading-relaxed">
-                                Algumas informações básicas são obtidas diretamente da conta principal e não podem ser alteradas por aqui.
-                            </p>
-                        </div>
-                    </section>
-                )}
+                        <div className="pt-4 border-t border-gray-100">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                    <MapPin size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-muted-text">Endereço e Frete</h3>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Localização de origem para cálculo de frete</p>
+                                </div>
+                            </div>
 
-                {/* ABA LOGÍSTICA */}
-                {activeTab === "logistica" && (
-                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                <MapPin size={24} />
+                            <div className="grid md:grid-cols-4 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">CEP</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                                        placeholder="00000-000"
+                                        value={settings.store_cep || ""}
+                                        onChange={e => setSettings({ ...settings, store_cep: e.target.value })}
+                                        onBlur={handleCepBlur}
+                                    />
+                                </div>
+                                <div className="md:col-span-3 space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Logradouro (Rua, Bairro, Cidade)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        placeholder="Carregando automaticamente via CEP..."
+                                        value={settings.store_address || ""}
+                                        onChange={e => setSettings({ ...settings, store_address: e.target.value })}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-muted-text">Logística e Frete</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Endereço de origem para cálculo de frete</p>
-                            </div>
-                        </div>
 
-                        <div className="grid md:grid-cols-3 gap-6">
-                            <div className="md:col-span-1 space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">CEP da Loja</label>
-                                <input
-                                    type="text"
-                                    className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                    placeholder="00000-000"
-                                    value={settings.store_cep || ""}
-                                    onChange={e => setSettings({ ...settings, store_cep: e.target.value })}
-                                    onBlur={handleCepBlur}
-                                />
+                            <div className="grid md:grid-cols-2 gap-6 mt-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Número</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings.store_number || ""}
+                                        onChange={e => setSettings({ ...settings, store_number: e.target.value })}
+                                        placeholder="Ex: 123"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Complemento</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings.store_complement || ""}
+                                        onChange={e => setSettings({ ...settings, store_complement: e.target.value })}
+                                        placeholder="Ex: Sala 2 / Loja A"
+                                    />
+                                </div>
                             </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Endereço de Origem</label>
-                                <input
-                                    type="text"
-                                    className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                    placeholder="Carregando automaticamente via CEP..."
-                                    value={settings.store_address || ""}
-                                    onChange={e => setSettings({ ...settings, store_address: e.target.value })}
-                                />
-                            </div>
-                        </div>
 
-                        <div className="grid md:grid-cols-2 gap-6 bg-soft/50 p-6 rounded-[2rem] border border-white/50">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Latitude</label>
-                                <input
-                                    type="text"
-                                    className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
-                                    value={settings.store_lat ?? ""}
-                                    onChange={e => setSettings({ ...settings, store_lat: e.target.value })}
-                                    placeholder="Ex: -23.550520"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Longitude</label>
-                                <input
-                                    type="text"
-                                    className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
-                                    value={settings.store_lng ?? ""}
-                                    onChange={e => setSettings({ ...settings, store_lng: e.target.value })}
-                                    placeholder="Ex: -46.633308"
-                                />
+                            <div className="grid md:grid-cols-2 gap-6 bg-soft/50 p-6 rounded-[2rem] border border-white/50 mt-6 mt-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center justify-between">
+                                        Latitude
+                                        <span className="text-[8px] text-primary normal-case">Busca automática via CEP</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
+                                        value={settings.store_lat ?? ""}
+                                        onChange={e => setSettings({ ...settings, store_lat: e.target.value })}
+                                        placeholder="Ex: -23.550520"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center justify-between">
+                                        Longitude
+                                        <span className="text-[8px] text-primary normal-case">Busca automática via CEP</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
+                                        value={settings.store_lng ?? ""}
+                                        onChange={e => setSettings({ ...settings, store_lng: e.target.value })}
+                                        placeholder="Ex: -46.633308"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -618,6 +690,62 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                                     placeholder="Ex: Vestindo a infância com cores e conforto..."
                                 />
                             </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ABA PRODUTOS (TIPOS) */}
+                {activeTab === "produtos" && (
+                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                <ShoppingBag size={24} />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-black text-muted-text">Tipos de Produto</h2>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gerencie as classificações (Novo, Usado, etc.)</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex gap-3">
+                                <input
+                                    type="text"
+                                    className="flex-1 p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                    placeholder="Ex: Novo, Usado, Moda Circular..."
+                                    value={newProductType}
+                                    onChange={e => setNewProductType(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleAddProductType()}
+                                />
+                                <Button
+                                    className="h-16 px-8 rounded-2xl font-black gap-2"
+                                    onClick={handleAddProductType}
+                                    isLoading={isAddingType}
+                                >
+                                    <Plus size={20} />
+                                    Adicionar
+                                </Button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {productTypes.map((type) => (
+                                    <div key={type.id} className="flex items-center justify-between p-5 bg-soft rounded-2xl border border-white/50 group">
+                                        <span className="font-bold text-muted-text uppercase tracking-widest text-xs">{type.name}</span>
+                                        <button
+                                            onClick={() => handleDeleteProductType(type.id)}
+                                            className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {productTypes.length === 0 && (
+                                <div className="text-center py-12 bg-soft/30 rounded-[2rem] border-2 border-dashed border-white/50">
+                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhum tipo cadastrado</p>
+                                </div>
+                            )}
                         </div>
                     </section>
                 )}

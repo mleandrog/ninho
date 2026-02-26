@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
-import { Users, Plus, Search, Edit2, Trash2, X, Loader2, Shield, ChevronDown } from "lucide-react";
+import { Users, Plus, Search, Edit2, Trash2, X, Loader2, Shield, ChevronDown, Package } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { clsx } from "clsx";
 
@@ -137,6 +137,35 @@ export default function AdminClientesPage() {
     const getLevelForCustomer = (c: Customer) =>
         c.level ?? levels.find(l => l.name === 'normal') ?? null;
 
+    // --- Pedidos do Cliente ---
+    const [customerOrders, setCustomerOrders] = useState<any[]>([]);
+    const [loadingOrders, setLoadingOrders] = useState(false);
+    const [detailTab, setDetailTab] = useState<'info' | 'pedidos'>('info');
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+    const fetchCustomerOrders = async (phone: string) => {
+        setLoadingOrders(true);
+        try {
+            const cleanPhone = phone.replace(/\D/g, '');
+            const { data } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('customer_phone', cleanPhone)
+                .order('created_at', { ascending: false });
+            setCustomerOrders(data || []);
+        } finally {
+            setLoadingOrders(false);
+        }
+    };
+
+    const handleOpenDetails = (c: Customer) => {
+        setSelectedCustomer(c);
+        setDetailTab('info');
+        setShowDetailModal(true);
+        fetchCustomerOrders(c.phone);
+    };
+
     return (
         <div className="animate-in fade-in duration-500">
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
@@ -215,7 +244,7 @@ export default function AdminClientesPage() {
                                         const lvl = getLevelForCustomer(c);
                                         return (
                                             <tr key={c.id} className="hover:bg-soft/30 transition-colors group">
-                                                <td className="px-6 lg:px-8 py-6">
+                                                <td className="px-6 lg:px-8 py-6 cursor-pointer" onClick={() => handleOpenDetails(c)}>
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm" style={{ backgroundColor: lvl?.color || '#6B7280' }}>
                                                             {(c.full_name || '?')[0]?.toUpperCase()}
@@ -236,12 +265,22 @@ export default function AdminClientesPage() {
                                                     {new Date(c.created_at).toLocaleDateString('pt-BR')}
                                                 </td>
                                                 <td className="px-6 lg:px-8 py-6 text-center">
-                                                    <button
-                                                        onClick={() => { setEditingCustomer(c); setSelectedLevelId(c.customer_level_id || ''); }}
-                                                        className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
-                                                    >
-                                                        <Edit2 size={18} />
-                                                    </button>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => handleOpenDetails(c)}
+                                                            className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
+                                                            title="Ver Detalhes"
+                                                        >
+                                                            <Search size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setEditingCustomer(c); setSelectedLevelId(c.customer_level_id || ''); }}
+                                                            className="p-3 bg-soft text-gray-500 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
+                                                            title="Alterar Nível"
+                                                        >
+                                                            <Shield size={18} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -302,6 +341,128 @@ export default function AdminClientesPage() {
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Detalhes do Cliente */}
+            {showDetailModal && selectedCustomer && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white sm:rounded-[3rem] w-full max-w-2xl h-full sm:h-auto max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
+                        {/* Header Modal */}
+                        <div className="p-8 lg:p-10 pb-4 flex justify-between items-start">
+                            <div className="flex items-center gap-6">
+                                <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center text-white font-black text-3xl shadow-lg"
+                                    style={{ backgroundColor: getLevelForCustomer(selectedCustomer)?.color || '#6B7280' }}>
+                                    {(selectedCustomer.full_name || '?')[0]?.toUpperCase()}
+                                </div>
+                                <div>
+                                    <h2 className="text-3xl font-black text-muted-text lowercase tracking-tighter leading-none">{selectedCustomer.full_name}</h2>
+                                    <p className="text-gray-400 font-bold text-sm mt-2">{selectedCustomer.phone}</p>
+                                    <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full inline-block">
+                                        {getLevelForCustomer(selectedCustomer)?.label || 'Normal'}
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowDetailModal(false)} className="p-2 hover:bg-soft rounded-xl transition-colors shrink-0"><X size={24} /></button>
+                        </div>
+
+                        {/* Tabs Modal */}
+                        <div className="px-8 lg:px-10 flex gap-6 border-b border-gray-100">
+                            {(['info', 'pedidos'] as const).map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => setDetailTab(t)}
+                                    className={clsx(
+                                        "pb-4 text-[10px] font-black uppercase tracking-widest transition-all relative",
+                                        detailTab === t ? "text-primary" : "text-gray-400 hover:text-muted-text"
+                                    )}
+                                >
+                                    {t === 'info' ? 'Informações' : 'Histórico de Pedidos'}
+                                    {detailTab === t && <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full" />}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Content Modal */}
+                        <div className="flex-1 overflow-y-auto p-8 lg:p-10 scrollbar-thin scrollbar-thumb-gray-200">
+                            {detailTab === 'info' ? (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-left-2 duration-300">
+                                    <div className="grid grid-cols-2 gap-8">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Data de Cadastro</p>
+                                            <p className="font-bold text-muted-text">{new Date(selectedCustomer.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total de Pedidos</p>
+                                            <p className="font-bold text-muted-text">{customerOrders.length} pedidos realizados</p>
+                                        </div>
+                                    </div>
+
+                                    {(selectedCustomer as any).address && (
+                                        <div className="space-y-4 pt-4 border-t border-dashed border-gray-100">
+                                            <h3 className="text-xs font-black text-muted-text uppercase tracking-widest">Endereço de Entrega</h3>
+                                            <div className="bg-soft p-6 rounded-2xl grid grid-cols-2 gap-4">
+                                                <div className="col-span-2">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Rua / Logradouro</p>
+                                                    <p className="font-bold text-muted-text">{(selectedCustomer as any).address.street}, {(selectedCustomer as any).address.number}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bairro</p>
+                                                    <p className="font-bold text-muted-text">{(selectedCustomer as any).address.neighborhood}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cidade / UF</p>
+                                                    <p className="font-bold text-muted-text">{(selectedCustomer as any).address.city} - {(selectedCustomer as any).address.state}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
+                                    {loadingOrders ? (
+                                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                            <Loader2 size={32} className="animate-spin text-primary" />
+                                            <p className="text-sm font-bold text-gray-400">Buscando histórico...</p>
+                                        </div>
+                                    ) : customerOrders.length === 0 ? (
+                                        <div className="text-center py-20 bg-soft rounded-3xl border border-dashed border-gray-200">
+                                            <Package size={40} className="mx-auto text-gray-300 mb-4" />
+                                            <p className="text-sm font-bold text-gray-400">Nenhum pedido encontrado para este cliente.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {customerOrders.map(order => (
+                                                <div key={order.id} className="bg-soft p-5 rounded-2xl border border-transparent hover:border-gray-200 transition-all flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-primary font-black text-xs">
+                                                            #{order.id.toString().slice(-4)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-muted-text text-sm">R$ {Number(order.total_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase">{new Date(order.created_at).toLocaleDateString('pt-BR')}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className={clsx(
+                                                        "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm",
+                                                        order.status === 'approved' ? 'bg-green-100 text-green-600' :
+                                                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-500'
+                                                    )}>
+                                                        {order.status === 'approved' ? 'Aprovado' : order.status === 'pending' ? 'Pendente' : order.status}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer Modal */}
+                        <div className="p-8 lg:p-10 pt-4 bg-gray-50/50 flex justify-end">
+                            <Button variant="outline" className="px-8 h-12 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm" onClick={() => setShowDetailModal(false)}>Fechar</Button>
+                        </div>
                     </div>
                 </div>
             )}
