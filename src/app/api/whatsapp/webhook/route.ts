@@ -196,15 +196,13 @@ export async function POST(request: NextRequest) {
                                     const msgTimestamp = data.messageTimestamp || Math.floor(Date.now() / 1000);
                                     const msgTimeISO = new Date(msgTimestamp * 1000).toISOString();
 
-                                    console.log(`[Lead Capture] Cliente não citou produto. Buscando disparos para o grupo ${phone} antes de ${msgTimeISO}...`);
-
-                                    // Buscar o último produto disparado NESTE grupo ANTES da mensagem do cliente
+                                    // Buscar o último produto disparado NESTE grupo para esta campanha (Smart Detection)
+                                    // Removemos o .lte('sent_at', msgTimeISO) para tolerar discrepâncias de segundos entre servidores
                                     const { data: dispatch, error: dispatchError } = await supabase
                                         .from('whatsapp_campaign_dispatches')
                                         .select('product_id, products(name)')
                                         .eq('campaign_id', campaignData.id)
                                         .eq('group_jid', phone)
-                                        .lte('sent_at', msgTimeISO)
                                         .order('sent_at', { ascending: false })
                                         .limit(1)
                                         .maybeSingle();
