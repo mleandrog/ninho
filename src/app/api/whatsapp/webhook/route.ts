@@ -44,24 +44,23 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ status: 'error', reason: 'Invalid JSON' });
             }
 
-            // LOG DE DEBUG - Agora com o payload parseado com sucesso
+            // Extrair dados básicos
+            const { event, data } = payload;
+            const eventType = (event || 'unknown').toUpperCase().replace(/\./g, '_');
+
+            // LOG DE DEBUG AGRESSIVO - Registrar TUDO que chega antes de qualquer filtro
             await supabase.from('debug_logs').insert({
-                event_type: payload.event || 'unknown',
+                event_type: `RAW_${eventType}`,
                 payload: {
-                    ...payload,
-                    _debug_headers: headers
+                    event: event,
+                    remoteJid: data?.key?.remoteJid,
+                    participant: data?.key?.participant || data?.participant,
+                    fromMe: data?.key?.fromMe,
+                    message_preview: (data?.message?.conversation || data?.message?.extendedTextMessage?.text || "").substring(0, 100),
+                    _full_payload: payload,
+                    _headers: headers
                 }
             });
-
-            console.log('[Webhook] Payload recebido:', JSON.stringify({
-                instance: payload.instance,
-                event: payload.event,
-                remoteJid: payload.data?.key?.remoteJid,
-                participant: payload.data?.key?.participant
-            }, null, 2));
-
-            // Extrair dados da mensagem
-            const { event, data } = payload;
             if (!event) {
                 return NextResponse.json({ status: 'ignored', reason: 'No event in payload' });
             }
