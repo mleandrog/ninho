@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
-import { MapPin, Phone, CheckCircle, XCircle, LogOut, Navigation, Package, DollarSign, History, Loader2, WhatsApp } from "lucide-react";
+import { MapPin, Phone, CheckCircle, XCircle, LogOut, Navigation, Package, DollarSign, History, Loader2, Truck } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { clsx } from "clsx";
 
