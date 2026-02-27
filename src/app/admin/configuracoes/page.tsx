@@ -239,39 +239,39 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
 
     return (
         <div className="animate-in fade-in duration-500">
-            <header className="mb-12 flex justify-between items-end">
+            <header className="mb-8 sm:mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-4xl font-black text-muted-text flex items-center gap-4">
-                        <Settings size={36} className="text-primary" />
-                        Configurações
+                    <h1 className="text-3xl sm:text-4xl font-black text-muted-text flex items-center gap-3 sm:gap-4 lowercase tracking-tighter">
+                        <Settings size={32} className="text-primary sm:w-9 sm:h-9" />
+                        Ajustes
                     </h1>
-                    <p className="text-gray-400 font-bold mt-1">Gerencie as preferências globais da sua loja</p>
+                    <p className="text-[10px] sm:text-sm font-bold text-gray-400 mt-1">Gerencie as preferências da sua loja</p>
                 </div>
 
                 <Button
-                    className={`h-14 px-8 rounded-2xl font-black gap-3 transition-all ${!hasChanges ? "bg-gray-200 text-gray-400 shadow-none cursor-not-allowed hover:bg-gray-200" : "shadow-vibrant"
+                    className={`w-full sm:w-auto h-12 sm:h-14 px-8 rounded-xl sm:rounded-2xl font-black gap-3 transition-all ${!hasChanges ? "bg-gray-200 text-gray-400 shadow-none cursor-not-allowed hover:bg-gray-200" : "shadow-vibrant"
                         }`}
                     onClick={handleSave}
                     isLoading={saving}
                     disabled={!hasChanges || saving}
                 >
-                    <Save size={20} />
+                    <Save size={18} />
                     {saving ? "Salvando..." : "Salvar"}
                 </Button>
             </header>
 
             {/* Navegação por Abas */}
-            <div className="flex gap-4 mb-8 bg-white/50 p-2 rounded-[2rem] w-fit flex-wrap">
+            <div className="flex bg-white p-1 rounded-xl sm:rounded-[2rem] shadow-premium border border-white gap-1 mb-6 sm:mb-8 overflow-x-auto no-scrollbar">
                 {(["geral", "pagamentos", "whatsapp", "sacolas", "landing", "produtos"] as TabType[]).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`px-8 py-4 rounded-2xl font-black text-sm transition-all uppercase tracking-widest ${activeTab === tab
-                            ? "bg-primary text-white shadow-vibrant scale-105"
-                            : "text-gray-400 hover:text-muted-text hover:bg-white"
+                        className={`flex-none sm:flex-1 px-4 sm:px-8 py-2.5 sm:py-4 rounded-lg sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all uppercase tracking-widest whitespace-nowrap ${activeTab === tab
+                            ? "bg-primary text-white shadow-vibrant"
+                            : "text-gray-400 hover:text-muted-text hover:bg-soft"
                             }`}
                     >
-                        {tab === 'landing' ? '🖼️ Landing Page' : tab === 'produtos' ? '🏷️ Produtos' : tab === 'geral' ? '🏠 Loja' : tab}
+                        {tab === 'landing' ? 'Landing' : tab === 'produtos' ? 'Produtos' : tab === 'geral' ? 'Geral' : tab}
                     </button>
                 ))}
             </div>
@@ -279,33 +279,33 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
             <div className="max-w-4xl">
                 {/* ABA GERAL */}
                 {activeTab === "geral" && (
-                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="p-3 bg-secondary/10 rounded-2xl text-secondary">
-                                <Info size={24} />
+                    <section className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-premium border border-white space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3 sm:gap-4 mb-2">
+                            <div className="p-2.5 sm:p-3 bg-secondary/10 rounded-xl sm:rounded-2xl text-secondary">
+                                <Info size={20} className="sm:w-6 sm:h-6" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-muted-text">Informações da Loja</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contatos básicos e identificação</p>
+                                <h2 className="text-xl sm:text-2xl font-black text-muted-text">Informações da Loja</h2>
+                                <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">Contatos básicos e identificação</p>
                             </div>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Nome da Loja</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Nome da Loja</label>
                                 <input
                                     type="text"
-                                    className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                    className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                     value={settings.store_name || ""}
                                     onChange={e => setSettings({ ...settings, store_name: e.target.value })}
                                     placeholder="Ex: Ninho Lar"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">WhatsApp de Atendimento</label>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">WhatsApp atendimento</label>
                                 <input
                                     type="text"
-                                    className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                    className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                     value={settings.whatsapp_number || ""}
                                     onChange={e => setSettings({ ...settings, whatsapp_number: e.target.value })}
                                     placeholder="Ex: 5511999999999"
@@ -313,14 +313,14 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t border-gray-100">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                    <MapPin size={24} />
+                        <div className="pt-4 sm:pt-6 border-t border-gray-100">
+                            <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                                <div className="p-2.5 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl text-primary">
+                                    <MapPin size={20} className="sm:w-6 sm:h-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-muted-text">Endereço e Frete</h3>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Localização de origem para cálculo de frete</p>
+                                    <h3 className="text-xl font-black text-muted-text">Endereço</h3>
+                                    <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">Origem para frete</p>
                                 </div>
                             </div>
 
@@ -405,50 +405,50 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
 
                 {/* ABA PAGAMENTOS */}
                 {activeTab === "pagamentos" && (
-                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <section className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-premium border border-white space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex items-center gap-4 mb-2">
-                            <div className="p-3 bg-secondary/10 rounded-2xl text-secondary">
-                                <CreditCard size={24} />
+                            <div className="p-2.5 sm:p-3 bg-secondary/10 rounded-xl sm:rounded-2xl text-secondary">
+                                <CreditCard size={20} className="sm:w-6 sm:h-6" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-muted-text">Pagamentos e Prazos</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Configurações do checkout e gateway</p>
+                                <h2 className="text-xl sm:text-2xl font-black text-muted-text">Pagamentos</h2>
+                                <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">Prazos e gateway</p>
                             </div>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Métodos Habilitados</h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-4 bg-soft rounded-2xl hover:bg-gray-100 transition-colors cursor-pointer"
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                            <div className="space-y-3 sm:space-y-4">
+                                <h3 className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Habilitar</h3>
+                                <div className="space-y-2 sm:space-y-3">
+                                    <div className="flex items-center justify-between p-3 sm:p-4 bg-soft rounded-xl sm:rounded-2xl hover:bg-gray-100 transition-colors cursor-pointer"
                                         onClick={() => setSettings({ ...settings, asaas_pix_enabled: !settings.asaas_pix_enabled })}>
-                                        <span className="font-bold text-muted-text">PIX Automático (Asaas)</span>
-                                        <div className={`w-12 h-6 rounded-full relative transition-all ${settings.asaas_pix_enabled ? "bg-primary" : "bg-gray-300"}`}>
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.asaas_pix_enabled ? "right-1" : "left-1"}`} />
+                                        <span className="font-bold text-muted-text text-xs sm:text-sm">PIX Automático</span>
+                                        <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full relative transition-all ${settings.asaas_pix_enabled ? "bg-primary" : "bg-gray-300"}`}>
+                                            <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.asaas_pix_enabled ? "right-0.5 sm:right-1" : "left-0.5 sm:left-1"}`} />
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between p-4 bg-soft rounded-2xl hover:bg-gray-100 transition-colors cursor-pointer"
+                                    <div className="flex items-center justify-between p-3 sm:p-4 bg-soft rounded-xl sm:rounded-2xl hover:bg-gray-100 transition-colors cursor-pointer"
                                         onClick={() => setSettings({ ...settings, asaas_card_enabled: !settings.asaas_card_enabled })}>
-                                        <span className="font-bold text-muted-text">Cartão / Boleto / Link</span>
-                                        <div className={`w-12 h-6 rounded-full relative transition-all ${settings.asaas_card_enabled ? "bg-primary" : "bg-gray-300"}`}>
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.asaas_card_enabled ? "right-1" : "left-1"}`} />
+                                        <span className="font-bold text-muted-text text-xs sm:text-sm">Cartão / Link</span>
+                                        <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full relative transition-all ${settings.asaas_card_enabled ? "bg-primary" : "bg-gray-300"}`}>
+                                            <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.asaas_card_enabled ? "right-0.5 sm:right-1" : "left-0.5 sm:left-1"}`} />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Prazos de Expiração</h3>
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carrinho Aberto (Minutos)</label>
-                                        <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm"
+                            <div className="space-y-3 sm:space-y-4">
+                                <h3 className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Expiração (min)</h3>
+                                <div className="space-y-3 sm:space-y-4">
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Carrinho</label>
+                                        <input type="number" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm"
                                             value={settings.cart_expiration_minutes}
                                             onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Link de Pagamento (Minutos)</label>
-                                        <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm"
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Pagamento</label>
+                                        <input type="number" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm"
                                             value={settings.payment_expiration_minutes}
                                             onChange={e => setSettings({ ...settings, payment_expiration_minutes: parseInt(e.target.value) })} />
                                     </div>
@@ -460,28 +460,28 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
 
                 {/* ABA WHATSAPP */}
                 {activeTab === "whatsapp" && (
-                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="p-3 bg-accent/10 rounded-2xl text-accent-foreground">
-                                <MessageSquare size={24} />
+                    <section className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-premium border border-white space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3 sm:gap-4 mb-2">
+                            <div className="p-2.5 sm:p-3 bg-accent/10 rounded-xl sm:rounded-2xl text-accent-foreground">
+                                <MessageSquare size={20} className="sm:w-6 sm:h-6" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-muted-text">Automação WhatsApp</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Configurações de robô e mensagens padrão</p>
+                                <h2 className="text-xl sm:text-2xl font-black text-muted-text">Automação</h2>
+                                <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">Robô e mensagens padrão</p>
                             </div>
                         </div>
 
                         <div className="space-y-6">
-                            <div className="max-w-xs space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Palavra-Chave Ativadora</label>
+                            <div className="max-w-xs space-y-1.5 sm:space-y-2">
+                                <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Palavra-Chave</label>
                                 <div className="relative">
                                     <input
                                         type="text"
-                                        className="w-full p-5 bg-soft rounded-2xl border-none font-black text-lg uppercase tracking-widest text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                                        className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-black text-base sm:text-lg uppercase tracking-widest text-primary outline-none focus:ring-2 focus:ring-primary/20"
                                         value={settings?.keyword || ""}
                                         onChange={e => setSettings({ ...settings, keyword: e.target.value })}
                                     />
-                                    <Smartphone className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                                    <Smartphone className="absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4 sm:w-5 sm:h-5" size={20} />
                                 </div>
                             </div>
 
@@ -545,43 +545,43 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
 
                 {/* ABA SACOLAS */}
                 {activeTab === "sacolas" && (
-                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                <ShoppingBag size={24} />
+                    <section className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-premium border border-white space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3 sm:gap-4 mb-2">
+                            <div className="p-2.5 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl text-primary">
+                                <ShoppingBag size={20} className="sm:w-6 sm:h-6" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-muted-text">Gestão de Sacolas</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Prazos e Lembretes via WhatsApp</p>
+                                <h2 className="text-xl sm:text-2xl font-black text-muted-text">Sacolas</h2>
+                                <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">Prazos e Lembretes</p>
                             </div>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Regras de Validade</h3>
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Prazo Máximo da Sacola (Dias)</label>
-                                        <input type="number" className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                            <div className="space-y-3 sm:space-y-4">
+                                <h3 className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Validade</h3>
+                                <div className="space-y-3 sm:space-y-4">
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Prazo Máximo (Dias)</label>
+                                        <input type="number" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                             value={settings?.bag_max_days || 30}
                                             onChange={e => setSettings({ ...settings, bag_max_days: parseInt(e.target.value) })}
                                             min={1}
                                         />
-                                        <p className="text-[10px] text-gray-400 font-bold px-1">Se passar esse tempo, a sacola será dada como Expirada e os itens voltarão ao estoque.</p>
+                                        <p className="text-[9px] text-gray-400 font-bold px-1 leading-tight">Itens voltam ao estoque após este prazo.</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Lembretes por Robô</h3>
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dias restantes para Avisar (Separado por vírgula)</label>
-                                        <input type="text" className="w-full p-4 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                            <div className="space-y-3 sm:space-y-4">
+                                <h3 className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Lembretes</h3>
+                                <div className="space-y-3 sm:space-y-4">
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Dias para Avisar</label>
+                                        <input type="text" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                             value={settings?.bag_reminder_days || "15, 10, 7, 3"}
                                             onChange={e => setSettings({ ...settings, bag_reminder_days: e.target.value })}
                                         />
-                                        <p className="text-[10px] text-gray-400 font-bold px-1">Exemplo: "15, 10, 7, 3" informará à cliente quando faltarem essas quantidades de dias para expirar a sacola.</p>
+                                        <p className="text-[9px] text-gray-400 font-bold px-1 leading-tight">Ex: "15, 10, 7, 3" para avisar nesses dias.</p>
                                     </div>
                                 </div>
                             </div>
@@ -590,14 +590,14 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                 )}
                 {/* ABA LANDING PAGE */}
                 {activeTab === "landing" && (
-                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                <LayoutTemplate size={24} />
+                    <section className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-premium border border-white space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3 sm:gap-4 mb-2">
+                            <div className="p-2.5 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl text-primary">
+                                <LayoutTemplate size={20} className="sm:w-6 sm:h-6" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-muted-text">Landing Page</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Edite os textos e informações da página inicial da loja</p>
+                                <h2 className="text-xl sm:text-2xl font-black text-muted-text">Interface</h2>
+                                <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">Textos da página inicial</p>
                             </div>
                         </div>
 
@@ -696,14 +696,14 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
 
                 {/* ABA PRODUTOS (TIPOS) */}
                 {activeTab === "produtos" && (
-                    <section className="bg-white p-10 rounded-[3rem] shadow-premium border border-white space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                <ShoppingBag size={24} />
+                    <section className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-premium border border-white space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3 sm:gap-4 mb-2">
+                            <div className="p-2.5 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl text-primary">
+                                <ShoppingBag size={20} className="sm:w-6 sm:h-6" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-muted-text">Tipos de Produto</h2>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gerencie as classificações (Novo, Usado, etc.)</p>
+                                <h2 className="text-xl sm:text-2xl font-black text-muted-text">Produtos</h2>
+                                <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">Classificações (Novo, Usado...)</p>
                             </div>
                         </div>
 

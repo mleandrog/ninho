@@ -722,24 +722,24 @@ export default function AdminWhatsAppDashboard() {
             )}
 
             {/* Tabs */}
-            <div className="flex overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 gap-3 sm:gap-4 mb-6 sm:mb-8 no-scrollbar">
+            <div className="flex bg-white p-1 rounded-xl sm:rounded-2xl shadow-premium border border-white gap-1 mb-6 sm:mb-8">
                 <button
                     onClick={() => setActiveTab("campaigns")}
-                    className={`whitespace-nowrap px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center gap-2 ${activeTab === "campaigns" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text shadow-premium"}`}
+                    className={`flex-1 px-2 sm:px-8 py-2.5 sm:py-4 rounded-lg sm:rounded-xl font-black text-[9px] sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${activeTab === "campaigns" ? "bg-primary text-white shadow-vibrant" : "bg-transparent text-gray-400 hover:text-muted-text"}`}
                 >
-                    <Send size={16} className="sm:w-[18px] sm:h-[18px]" /> Campanhas
+                    <Send size={14} className="sm:w-[18px] sm:h-[18px]" /> <span className="truncate">Campanhas</span>
                 </button>
                 <button
                     onClick={() => setActiveTab("groups")}
-                    className={`whitespace-nowrap px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center gap-2 ${activeTab === "groups" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text shadow-premium"}`}
+                    className={`flex-1 px-2 sm:px-8 py-2.5 sm:py-4 rounded-lg sm:rounded-xl font-black text-[9px] sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${activeTab === "groups" ? "bg-primary text-white shadow-vibrant" : "bg-transparent text-gray-400 hover:text-muted-text"}`}
                 >
-                    <Users size={16} className="sm:w-[18px] sm:h-[18px]" /> Grupos ({groups.length})
+                    <Users size={14} className="sm:w-[18px] sm:h-[18px]" /> <span className="truncate">Grupos ({groups.length})</span>
                 </button>
                 <button
                     onClick={() => setActiveTab("connection")}
-                    className={`whitespace-nowrap px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center gap-2 ${activeTab === "connection" ? "bg-primary text-white shadow-vibrant" : "bg-white text-gray-400 hover:text-muted-text shadow-premium"}`}
+                    className={`flex-1 px-2 sm:px-8 py-2.5 sm:py-4 rounded-lg sm:rounded-xl font-black text-[9px] sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${activeTab === "connection" ? "bg-primary text-white shadow-vibrant" : "bg-transparent text-gray-400 hover:text-muted-text"}`}
                 >
-                    <QrCode size={16} className="sm:w-[18px] sm:h-[18px]" /> Conexão
+                    <QrCode size={14} className="sm:w-[18px] sm:h-[18px]" /> <span className="truncate">Conexão</span>
                 </button>
             </div>
 
@@ -1237,7 +1237,7 @@ export default function AdminWhatsAppDashboard() {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center group/tools">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">4</div>
+                                        <div className="w-6 h-6 rounded-full bg-soft text-gray-400 flex items-center justify-center text-[10px] font-black">4</div>
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
@@ -1250,7 +1250,7 @@ export default function AdminWhatsAppDashboard() {
                                     </div>
                                 </div>
                                 <textarea placeholder="É isso! Esses são todos os produtos disponíveis. Para comprar, responda com o código! 🛒"
-                                    className="w-full p-4 bg-soft rounded-2xl border-2 border-transparent focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
+                                    className="w-full p-4 bg-soft/40 rounded-2xl border border-soft hover:border-primary/10 focus:border-primary/30 font-medium h-24 outline-none resize-none transition-all text-sm whitespace-pre-wrap"
                                     value={form.final_message}
                                     onChange={e => setForm({ ...form, final_message: e.target.value })} />
                             </div>

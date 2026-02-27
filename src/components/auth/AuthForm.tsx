@@ -76,26 +76,33 @@ export function AuthForm({ type }: AuthFormProps) {
 
         try {
             if (type === "register") {
+                const cleanPhone = phone.replace(/\D/g, "");
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
                         data: {
                             full_name: fullName,
-                            phone: phone.replace(/\D/g, ""),
+                            phone: cleanPhone,
                         },
                     },
                 });
                 if (error) throw error;
 
-                // Vincular pedidos automáticos
-                const { data: authData } = await supabase.auth.getUser();
-                if (authData?.user) {
-                    await fetch("/api/auth/link-orders", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ phone, userId: authData.user.id }),
-                    });
+                // Tenta vincular pedidos se houver telefone, mas sem travar o cadastro
+                if (cleanPhone) {
+                    const { data: authData } = await supabase.auth.getUser();
+                    if (authData?.user) {
+                        try {
+                            await fetch("/api/auth/link-orders", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ phone: cleanPhone, userId: authData.user.id }),
+                            });
+                        } catch (linkError) {
+                            console.error("Erro silencioso ao vincular:", linkError);
+                        }
+                    }
                 }
 
                 toast.success("Cadastro realizado! Verifique seu e-mail.");
@@ -136,55 +143,12 @@ export function AuthForm({ type }: AuthFormProps) {
                 required
             />
             {type === "register" && (
-                <>
-                    <Input
-                        label="WhatsApp"
-                        placeholder="Ex: 11 99999-9999"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        required
-                        disabled={isOtpVerified}
-                    />
-                    {!isOtpVerified && (
-                        <div className="space-y-4">
-                            {!isOtpSent ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full h-12 border-primary text-primary font-bold"
-                                    onClick={handleSendOtp}
-                                    isLoading={sendingOtp}
-                                >
-                                    Enviar Código WhatsApp
-                                </Button>
-                            ) : (
-                                <div className="flex gap-2 items-end">
-                                    <div className="flex-1">
-                                        <Input
-                                            label="Código de Verificação"
-                                            placeholder="123456"
-                                            value={otpCode}
-                                            onChange={(e) => setOtpCode(e.target.value)}
-                                        />
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        className="h-14 px-6 font-bold"
-                                        onClick={handleVerifyOtp}
-                                        isLoading={verifyingOtp}
-                                    >
-                                        Validar
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    {isOtpVerified && (
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-4 rounded-xl text-xs font-bold uppercase tracking-widest border border-green-100">
-                            ✓ Telefone Verificado
-                        </div>
-                    )}
-                </>
+                <Input
+                    label="WhatsApp (Opcional)"
+                    placeholder="Ex: 11 99999-9999"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                />
             )}
             <Input
                 label="Senha"
@@ -198,7 +162,6 @@ export function AuthForm({ type }: AuthFormProps) {
                 type="submit"
                 className="w-full h-14 text-lg font-black"
                 isLoading={loading}
-                disabled={type === "register" && !isOtpVerified}
             >
                 {type === "login" ? "Entrar" : "Criar Minha Conta"}
             </Button>

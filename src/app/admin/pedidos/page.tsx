@@ -26,6 +26,7 @@ export default function AdminOrdersPage() {
     const [bags, setBags] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedBag, setSelectedBag] = useState<any>(null);
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
     // Filtros
     const [search, setSearch] = useState("");
@@ -123,6 +124,29 @@ export default function AdminOrdersPage() {
         setFilterStatus("");
         setFilterFrom("");
         setFilterTo("");
+    };
+
+    const handleViewOrderDetails = async (order: any) => {
+        const toastId = toast.loading("Carregando detalhes...");
+        try {
+            const { data, error } = await supabase
+                .from("order_items")
+                .select(`
+                    *,
+                    product: product_id(name, image_url, price)
+                `)
+                .eq("order_id", order.id);
+
+            if (error) throw error;
+
+            setSelectedOrder({
+                ...order,
+                items: data || []
+            });
+            toast.dismiss(toastId);
+        } catch (err: any) {
+            toast.error("Erro ao carregar itens: " + err.message, { id: toastId });
+        }
     };
 
     const filtered = useMemo(() => {
@@ -394,7 +418,7 @@ export default function AdminOrdersPage() {
                                             )}
 
                                             <button
-                                                onClick={() => activeTab === 'sacolas' ? setSelectedBag(item) : undefined}
+                                                onClick={() => activeTab === 'sacolas' ? setSelectedBag(item) : handleViewOrderDetails(item)}
                                                 className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl bg-soft text-gray-400 hover:text-primary hover:bg-primary/5 flex items-center justify-center transition-all shrink-0"
                                             >
                                                 <Eye size={12} className="sm:w-3.5 sm:h-3.5" />
@@ -509,6 +533,101 @@ export default function AdminOrdersPage() {
                             </button>
                             <button
                                 onClick={() => setSelectedBag(null)}
+                                className="px-8 py-4 rounded-2xl font-black text-xs lg:text-sm uppercase tracking-widest bg-gray-200 text-gray-500 hover:bg-gray-300 transition-colors w-full sm:w-auto"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal de Detalhes do Pedido */}
+            {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 lg:p-4 bg-muted-text/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-2xl lg:rounded-[3rem] shadow-premium overflow-hidden border border-white flex flex-col h-full lg:h-auto lg:max-h-[90vh]">
+
+                        <div className="p-6 lg:p-8 border-b border-gray-100 flex justify-between items-center bg-soft sticky top-0 z-10">
+                            <div>
+                                <h2 className="text-xl lg:text-2xl font-black text-muted-text flex items-center gap-3">
+                                    <Truck className="text-primary" size={24} />
+                                    <span>Pedido {selectedOrder.order_number || `#${selectedOrder.id.slice(0, 8)}`}</span>
+                                </h2>
+                                <p className="text-xs lg:text-sm font-bold text-gray-400 mt-1">
+                                    Cliente: <span className="text-muted-text">{selectedOrder.profiles?.full_name || selectedOrder.customer_name || 'Desconhecido'}</span>
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedOrder(null)}
+                                className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-white text-gray-400 hover:text-muted-text hover:shadow-sm flex items-center justify-center transition-all border border-gray-100"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 lg:p-8 overflow-y-auto space-y-6 flex-1">
+                            {/* Resumo */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="bg-soft p-5 rounded-2xl lg:rounded-[2rem]">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status / Data</p>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className={clsx("px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest", (STATUS_CONFIG[selectedOrder.status] || STATUS_CONFIG.pending).color)}>
+                                            {(STATUS_CONFIG[selectedOrder.status] || STATUS_CONFIG.pending).label}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm font-bold text-muted-text">Realizado em: {new Date(selectedOrder.created_at).toLocaleDateString("pt-BR")}</p>
+                                    <p className="text-[10px] font-bold text-gray-400">
+                                        {new Date(selectedOrder.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                    </p>
+                                </div>
+                                <div className="bg-primary/5 p-5 rounded-2xl lg:rounded-[2rem] border border-primary/10">
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Total do Pedido</p>
+                                    <p className="text-xl lg:text-2xl font-black text-primary">
+                                        R$ {Number(selectedOrder.total_amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                                        Método: {selectedOrder.payment_method === 'pix' ? 'PIX' : 'Cartão/Boleto'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Itens */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest px-2">Produtos</h3>
+                                <div className="space-y-3">
+                                    {selectedOrder.items?.map((item: any) => (
+                                        <div key={item.id} className="flex gap-4 p-4 rounded-2xl border border-gray-100 items-center bg-white">
+                                            <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl bg-soft overflow-hidden shrink-0">
+                                                {item.product?.image_url ? (
+                                                    <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                        <ShoppingBag size={20} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-xs lg:text-sm text-muted-text truncate">{item.product?.name || "Produto"}</h4>
+                                                <p className="text-[10px] font-bold text-gray-400">Qtd: {item.quantity}x</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="font-black text-primary text-sm">
+                                                    R$ {Number((item.price_at_time || item.product?.price || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!selectedOrder.items || selectedOrder.items.length === 0) && (
+                                        <div className="text-center p-8 bg-soft rounded-2xl text-sm font-bold text-gray-400">
+                                            Nenhum item encontrado neste pedido.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 lg:p-8 bg-gray-50 border-t border-gray-100 flex justify-end sticky bottom-0 z-10">
+                            <button
+                                onClick={() => setSelectedOrder(null)}
                                 className="px-8 py-4 rounded-2xl font-black text-xs lg:text-sm uppercase tracking-widest bg-gray-200 text-gray-500 hover:bg-gray-300 transition-colors w-full sm:w-auto"
                             >
                                 Fechar

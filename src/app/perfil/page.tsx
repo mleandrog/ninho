@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { ShoppingBag, Package, User, LogOut, Clock, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { MessageSquare, Smartphone, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/Input";
 
 export default function ProfilePage() {
     const { user, profile, loading: authLoading } = useAuth();
@@ -15,6 +17,16 @@ export default function ProfilePage() {
     const [bags, setBags] = useState<any[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [syncing, setSyncing] = useState(false);
+
+    // Estados para Sincronização
+    const [showSync, setShowSync] = useState(false);
+    const [syncPhone, setSyncPhone] = useState("");
+    const [otpCode, setOtpCode] = useState("");
+    const [isOtpSent, setIsOtpSent] = useState(false);
+    const [sendingOtp, setSendingOtp] = useState(false);
+    const [verifyingOtp, setVerifyingOtp] = useState(false);
+
     const router = useRouter();
 
     useEffect(() => {
@@ -51,10 +63,80 @@ export default function ProfilePage() {
                 .order("created_at", { ascending: false });
 
             setOrders(ordersData || []);
+
+            // Se o usuário já tem telefone no metadados, preenchemos o syncPhone
+            if (user?.user_metadata?.phone && !syncPhone) {
+                setSyncPhone(user.user_metadata.phone);
+            }
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSendOtp = async () => {
+        if (!syncPhone) return toast.error("Informe seu WhatsApp");
+        setSendingOtp(true);
+        try {
+            const res = await fetch("/api/auth/send-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: syncPhone }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setIsOtpSent(true);
+                toast.success("Código enviado!");
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Erro ao enviar código");
+        } finally {
+            setSendingOtp(false);
+        }
+    };
+
+    const handleVerifyAndLink = async () => {
+        if (!otpCode) return toast.error("Informe o código");
+        setVerifyingOtp(true);
+        try {
+            const resVerify = await fetch("/api/auth/verify-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: syncPhone, code: otpCode }),
+            });
+            const dataVerify = await resVerify.json();
+
+            if (dataVerify.success) {
+                // Se verificou, vincula!
+                const resLink = await fetch("/api/auth/link-orders", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone: syncPhone, userId: user?.id }),
+                });
+                const dataLink = await resLink.json();
+
+                if (dataLink.success) {
+                    toast.success("Pedidos sincronizados com sucesso!");
+                    setShowSync(false);
+                    fetchUserData(); // Recarrega os pedidos
+
+                    // Atualiza telefone no metadados para segurança
+                    await supabase.auth.updateUser({
+                        data: { phone: syncPhone.replace(/\D/g, "") }
+                    });
+                } else {
+                    throw new Error(dataLink.error);
+                }
+            } else {
+                throw new Error(dataVerify.error);
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Erro na sincronização");
+        } finally {
+            setVerifyingOtp(false);
         }
     };
 
@@ -125,11 +207,83 @@ export default function ProfilePage() {
 
                     {/* Content */}
                     <div className="lg:col-span-3 space-y-6">
-                        <div className="hidden lg:flex items-center justify-between">
-                            <h1 className="text-4xl font-black text-muted-text">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <h1 className="text-3xl sm:text-4xl font-black text-muted-text">
                                 {activeTab === 'bags' ? "Minhas Sacolas" : "Meus Pedidos"}
                             </h1>
+
+                            {activeTab === 'orders' && !showSync && (
+                                <Button
+                                    variant="outline"
+                                    className="rounded-xl font-bold gap-2 text-xs uppercase tracking-widest border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                                    onClick={() => setShowSync(true)}
+                                >
+                                    <Clock size={14} />
+                                    Sincronizar Histórico
+                                </Button>
+                            )}
                         </div>
+
+                        {/* Card de Sincronização */}
+                        {activeTab === 'orders' && showSync && (
+                            <div className="bg-primary/5 border border-primary/20 rounded-2xl sm:rounded-[2rem] p-6 sm:p-8 space-y-4 animate-in zoom-in-95 duration-300">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white shadow-vibrant">
+                                        <Smartphone size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-muted-text text-lg">Sincronizar Pedidos Antigos</h3>
+                                        <p className="text-xs text-gray-500 font-medium">Puxe seus pedidos feitos anteriormente via WhatsApp usando seu número.</p>
+                                    </div>
+                                </div>
+
+                                {!isOtpSent ? (
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <div className="flex-1">
+                                            <Input
+                                                placeholder="Seu WhatsApp (Ex: 11999999999)"
+                                                value={syncPhone}
+                                                onChange={e => setSyncPhone(e.target.value)}
+                                                className="bg-white border-primary/10"
+                                            />
+                                        </div>
+                                        <Button
+                                            className="h-14 px-8 font-black uppercase tracking-widest shadow-vibrant"
+                                            onClick={handleSendOtp}
+                                            isLoading={sendingOtp}
+                                        >
+                                            Enviar Código
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <div className="flex-1">
+                                            <Input
+                                                placeholder="Código de 6 dígitos"
+                                                value={otpCode}
+                                                onChange={e => setOtpCode(e.target.value)}
+                                                className="bg-white border-primary/10 tracking-[0.5em] text-center font-black"
+                                                maxLength={6}
+                                            />
+                                        </div>
+                                        <Button
+                                            className="h-14 px-8 font-black uppercase tracking-widest shadow-vibrant"
+                                            onClick={handleVerifyAndLink}
+                                            isLoading={verifyingOtp}
+                                        >
+                                            Confirmar e Puxar
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => { setShowSync(false); setIsOtpSent(false); }}
+                                    className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hover:text-primary transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        )}
 
                         {activeTab === 'bags' ? (
                             <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-premium border border-white overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">

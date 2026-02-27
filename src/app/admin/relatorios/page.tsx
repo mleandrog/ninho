@@ -75,32 +75,32 @@ export default function ReportsPage() {
 
     return (
         <div className="animate-in fade-in duration-500">
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
                 <div>
-                    <h1 className="text-4xl font-black text-muted-text">Relatórios e Análise</h1>
-                    <p className="text-gray-400 font-bold mt-1">Acompanhe a saúde financeira do seu Ninho Lar.</p>
+                    <h1 className="text-3xl sm:text-4xl font-black text-muted-text lowercase tracking-tighter">Relatórios</h1>
+                    <p className="text-[10px] sm:text-sm font-bold text-gray-400 mt-1">Acompanhe a saúde financeira do seu Ninho Lar.</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-2 sm:gap-4 w-full lg:w-auto">
                     <select
                         value={period}
                         onChange={(e) => setPeriod(e.target.value)}
-                        className="bg-white px-6 py-4 rounded-2xl shadow-premium border border-gray-50 text-sm font-bold text-muted-text focus:ring-2 focus:ring-primary/20 outline-none"
+                        className="flex-1 lg:flex-none bg-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-premium border border-gray-50 text-[10px] sm:text-sm font-bold text-muted-text focus:ring-2 focus:ring-primary/20 outline-none"
                     >
-                        <option value="7d">Últimos 7 dias</option>
-                        <option value="30d">Últimos 30 dias</option>
-                        <option value="90d">Últimos 90 dias</option>
-                        <option value="all">Todo o período</option>
+                        <option value="7d">7 dias</option>
+                        <option value="30d">30 dias</option>
+                        <option value="90d">90 dias</option>
+                        <option value="all">Tudo</option>
                     </select>
-                    <Button variant="outline" className="h-14 px-6 rounded-2xl gap-2 border-gray-100 bg-white">
-                        <Download size={18} />
+                    <Button variant="outline" className="h-10 sm:h-14 px-4 sm:px-6 rounded-xl sm:rounded-2xl gap-2 border-gray-100 bg-white text-[10px] sm:text-sm">
+                        <Download size={14} className="sm:w-[18px] sm:h-[18px]" />
                         Exportar
                     </Button>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 mb-8 sm:mb-12">
                 <KPICard
-                    label="Faturamento Total"
+                    label="Faturamento"
                     value={`R$ ${reportData.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={DollarSign}
                     trend="+15.4%"
@@ -114,7 +114,7 @@ export default function ReportsPage() {
                     color="secondary"
                 />
                 <KPICard
-                    label="Taxa de Conversão"
+                    label="Conversão"
                     value="3.2%"
                     icon={ArrowUpRight}
                     trend="+1.2%"
@@ -122,32 +122,32 @@ export default function ReportsPage() {
                 />
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8 sm:mb-12">
                 {/* Mais Vendidos */}
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-white">
-                    <h2 className="text-2xl font-black text-muted-text mb-8 flex items-center gap-3">
-                        <Package className="text-primary" size={24} />
+                <div className="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-premium border border-white">
+                    <h2 className="text-lg sm:text-2xl font-black text-muted-text mb-6 sm:mb-8 flex items-center gap-3">
+                        <Package className="text-primary" size={20} />
                         Top Produtos
                     </h2>
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                         {reportData.topProducts.map((product: any) => (
-                            <div key={product.name} className="flex items-center justify-between p-4 hover:bg-soft rounded-2xl transition-all group">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-xl">
+                            <div key={product.name} className="flex items-center justify-between p-3 sm:p-4 hover:bg-soft rounded-xl sm:rounded-2xl transition-all group">
+                                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-xl shadow-sm flex items-center justify-center text-lg shrink-0">
                                         {product.name.includes("Vestido") ? "👗" : product.name.includes("Tênis") ? "👟" : "👕"}
                                     </div>
-                                    <div>
-                                        <p className="font-black text-muted-text group-hover:text-primary transition-colors">{product.name}</p>
-                                        <p className="text-xs font-bold text-gray-400">{product.sales} vendas realizadas</p>
+                                    <div className="min-w-0">
+                                        <p className="font-black text-muted-text group-hover:text-primary transition-colors text-[10px] sm:text-sm truncate">{product.name}</p>
+                                        <p className="text-[9px] sm:text-xs font-bold text-gray-400">{product.sales} vendas</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="font-black text-muted-text">R$ {product.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                <div className="text-right shrink-0">
+                                    <p className="font-black text-muted-text text-[10px] sm:text-sm">R$ {product.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                     <div className={clsx(
-                                        "flex items-center justify-end gap-1 text-[10px] font-black",
+                                        "flex items-center justify-end gap-1 text-[8px] sm:text-[10px] font-black",
                                         product.growth > 0 ? "text-green-500" : "text-red-400"
                                     )}>
-                                        {product.growth > 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                        {product.growth > 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                                         {Math.abs(product.growth)}%
                                     </div>
                                 </div>
@@ -157,22 +157,22 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Performance por Categoria */}
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-white">
-                    <h2 className="text-2xl font-black text-muted-text mb-8 flex items-center gap-3">
-                        <Filter className="text-secondary" size={24} />
+                <div className="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-premium border border-white">
+                    <h2 className="text-lg sm:text-2xl font-black text-muted-text mb-6 sm:mb-8 flex items-center gap-3">
+                        <Filter className="text-secondary" size={20} />
                         Vendas por Categoria
                     </h2>
-                    <div className="space-y-8 py-4">
+                    <div className="space-y-6 sm:space-y-8 py-2 sm:py-4">
                         {reportData.categoryPerformance.map((cat: any) => (
-                            <div key={cat.name} className="space-y-3">
+                            <div key={cat.name} className="space-y-2 sm:space-y-3">
                                 <div className="flex justify-between items-end">
                                     <div>
-                                        <p className="text-xl font-black text-muted-text">{cat.name}</p>
-                                        <p className="text-sm font-bold text-gray-400">Distribuição total</p>
+                                        <p className="text-base sm:text-xl font-black text-muted-text">{cat.name}</p>
+                                        <p className="text-[10px] sm:text-sm font-bold text-gray-400">Distribuição total</p>
                                     </div>
-                                    <span className="text-2xl font-black text-primary">{cat.percentage}%</span>
+                                    <span className="text-xl sm:text-2xl font-black text-primary">{cat.percentage}%</span>
                                 </div>
-                                <div className="h-4 bg-soft rounded-full overflow-hidden">
+                                <div className="h-3 sm:h-4 bg-soft rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{ width: `${cat.percentage}%` }}
@@ -190,18 +190,18 @@ export default function ReportsPage() {
             </div>
 
             {/* Insights Section */}
-            <div className="bg-accent/10 p-10 rounded-[3rem] border-2 border-accent/20">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                    <div className="w-24 h-24 bg-white rounded-3xl shadow-accent flex items-center justify-center text-5xl">
+            <div className="bg-accent/10 p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] border-2 border-accent/20">
+                <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-8">
+                    <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-2xl sm:rounded-3xl shadow-accent flex items-center justify-center text-3xl sm:text-5xl shrink-0">
                         💡
                     </div>
-                    <div className="flex-1 space-y-2 text-center md:text-left">
-                        <h3 className="text-2xl font-black text-muted-text">Insight do Ninho</h3>
-                        <p className="text-lg font-bold text-gray-500 max-w-2xl text-muted-text">
+                    <div className="flex-1 space-y-1 sm:space-y-2 text-center md:text-left">
+                        <h3 className="text-xl sm:text-2xl font-black text-muted-text">Insight do Ninho</h3>
+                        <p className="text-sm sm:text-lg font-bold text-gray-500 max-w-2xl text-muted-text">
                             Notamos que os <span className="text-primary italic">Vestidos</span> tiveram um aumento de procura nos finais de semana. que tal criar uma campanha de "Look de Domingo" para impulsionar ainda mais?
                         </p>
                     </div>
-                    <Button className="h-16 px-10 rounded-full shadow-vibrant text-lg">
+                    <Button className="h-12 sm:h-16 px-6 sm:px-10 rounded-full shadow-vibrant text-xs sm:text-lg w-full md:w-auto">
                         Criar Campanha
                     </Button>
                 </div>
