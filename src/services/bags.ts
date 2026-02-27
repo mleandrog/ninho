@@ -70,5 +70,86 @@ export const bagService = {
             console.error(`[BagService] Erro ao expirar sacola ${bagId}:`, error);
             throw error;
         }
+    },
+
+    /**
+     * Localiza uma sacola aberta para o cliente ou cria uma nova.
+     */
+    async findOrCreateOpenBag(phone: string, customerId?: string) {
+        try {
+            // Tentar encontrar uma sacola aberta
+            const { data: existingBag } = await supabase
+                .from('bags')
+                .select('*')
+                .eq('customer_phone', phone)
+                .eq('status', 'open')
+                .maybeSingle();
+
+            if (existingBag) return existingBag;
+
+            // Se não existir, criar uma nova
+            // 1. Buscar configurações de prazo
+            const { data: settings } = await supabase
+                .from('whatsapp_settings')
+                .select('bag_max_days')
+                .limit(1)
+                .single();
+
+            const maxDays = settings?.bag_max_days || 30;
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + maxDays);
+
+            const { data: newBag, error: createError } = await supabase
+                .from('bags')
+                .insert({
+                    customer_phone: phone,
+                    customer_id: customerId || null,
+                    status: 'open',
+                    expires_at: expiresAt.toISOString()
+                })
+                .select()
+                .single();
+
+            if (createError) throw createError;
+            return newBag;
+        } catch (error) {
+            console.error('[BagService] Erro em findOrCreateOpenBag:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Adiciona um item à sacola.
+     */
+    async addItemToBag(bagId: string, productId: number, quantity: number = 1) {
+        try {
+            // Verificar se o item já existe na sacola
+            const { data: existingItem } = await supabase
+                .from('bag_items')
+                .select('*')
+                .eq('bag_id', bagId)
+                .eq('product_id', productId)
+                .maybeSingle();
+
+            if (existingItem) {
+                const { error: updateError } = await supabase
+                    .from('bag_items')
+                    .update({ quantity: existingItem.quantity + quantity })
+                    .eq('id', existingItem.id);
+                if (updateError) throw updateError;
+            } else {
+                const { error: insertError } = await supabase
+                    .from('bag_items')
+                    .insert({
+                        bag_id: bagId,
+                        product_id: productId,
+                        quantity: quantity
+                    });
+                if (insertError) throw insertError;
+            }
+        } catch (error) {
+            console.error('[BagService] Erro em addItemToBag:', error);
+            throw error;
+        }
     }
 };

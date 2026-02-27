@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { evolutionService } from '@/services/evolution';
+import { bagService } from '@/services/bags';
 
 /**
  * Webhook de notificações do ASAAS.
@@ -75,13 +76,47 @@ export async function POST(req: NextRequest) {
                 }
             }
 
-            // Notificar cliente via WhatsApp
+            // 2. Notificar cliente via WhatsApp
             try {
+                const isSacola = order.payment_method === 'sacola' || (order.delivery_address as any)?.type === 'sacola';
                 const firstName = order.customer_name?.split(' ')[0] || 'Cliente';
-                await evolutionService.sendMessage(
-                    order.customer_phone,
-                    `✅ Pagamento confirmado!\n\nObrigado, ${firstName}! Seu pedido *#${order.order_number}* foi confirmado e já estamos preparando tudo com muito carinho. 💛\n\nEm breve você receberá atualizações sobre a entrega!`
-                );
+
+                if (isSacola) {
+                    // MIGRAR PARA SACOLA
+                    const { data: items } = await supabase
+                        .from('order_items')
+                        .select('*')
+                        .eq('order_id', order.id);
+
+                    if (items && items.length > 0) {
+                        const bag = await bagService.findOrCreateOpenBag(order.customer_phone, order.customer_id);
+                        for (const item of items) {
+                            await bagService.addItemToBag(bag.id, item.product_id, item.quantity);
+                        }
+
+                        // Calcular dias para expirar
+                        const expiresAt = new Date(bag.expires_at);
+                        const today = new Date();
+                        const diffTime = Math.abs(expiresAt.getTime() - today.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        const dateFormatted = expiresAt.toLocaleDateString('pt-BR');
+
+                        const bagUrl = `https://ninhoelar.com.br/checkout/sacola/${bag.id}`;
+
+                        await evolutionService.sendMessage(
+                            order.customer_phone,
+                            `✅ *Pagamento aprovado!* Sua sacola foi criada/atualizada com sucesso. 🧸\n\n` +
+                            `Obrigado, ${firstName}! Você tem até *${diffDays} dias* (vence em ${dateFormatted}) para acumular mais produtos e solicitar o envio único. 💛\n\n` +
+                            `🔗 *Link para fechar sacola e enviar:*\n${bagUrl}`
+                        );
+                    }
+                } else {
+                    // MENSAGEM PADRÃO DELIVERY
+                    await evolutionService.sendMessage(
+                        order.customer_phone,
+                        `✅ *Pagamento confirmado!*\n\nObrigado, ${firstName}! Seu pedido *#${order.order_number}* foi confirmado e já estamos preparando tudo com muito carinho. 💛\n\nEm breve você receberá atualizações sobre a entrega!`
+                    );
+                }
             } catch (notifyErr) {
                 console.error('[ASAAS Webhook] Erro ao enviar notificação WhatsApp:', notifyErr);
             }
