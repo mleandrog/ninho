@@ -3,8 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
-import { Plus, Search, Edit2, Trash2, X, MessageSquare, Upload, Loader2, Image as ImageIcon, Info } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, MessageSquare, Upload, Loader2, Image as ImageIcon, Info, Heart } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
@@ -16,6 +17,19 @@ export default function AdminProductsPage() {
     const [editingProduct, setEditingProduct] = useState<any>(null);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type: "danger" | "info";
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { },
+        type: "info"
+    });
 
     const SIZES = ['RN', 'P', 'M', 'G', 'GG', 'Outros'];
 
@@ -230,7 +244,22 @@ export default function AdminProductsPage() {
                 available_in_store: formData.available_in_store,
                 whatsapp_campaign_completed: false,
                 size: formData.size === 'Outros' ? customSize : formData.size,
+                // Garantir que não envie "" para UUIDs
+                category_id: formData.category_id || null,
+                product_type_id: formData.product_type_id || null,
             };
+
+            // Validação amigável
+            if (!productData.category_id) {
+                toast.error("Por favor, selecione uma categoria para o produto.");
+                setUploading(false);
+                return;
+            }
+            if (!productData.product_type_id) {
+                toast.error("O 'Tipo de Produto' é obrigatório para que os clientes saibam o que estão comprando.");
+                setUploading(false);
+                return;
+            }
 
             if (editingProduct) {
                 const { error } = await supabase
@@ -278,9 +307,18 @@ export default function AdminProductsPage() {
         setShowModal(true);
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Deseja realmente excluir este produto?")) return;
+    const handleDelete = (id: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Excluir Produto",
+            message: "Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.",
+            type: "danger",
+            onConfirm: () => executeDelete(id)
+        });
+    };
 
+    const executeDelete = async (id: number) => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
         const toastId = toast.loading("Excluindo produto...");
         try {
             const { error } = await supabase
@@ -347,28 +385,28 @@ export default function AdminProductsPage() {
             </header>
 
             <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
-                <div className="p-3 sm:p-4 lg:p-8 border-b border-gray-50">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <div className="p-4 sm:p-6 lg:p-8 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="relative w-full max-w-md">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                         <input
                             type="text"
                             placeholder="Buscar produto..."
-                            className="w-full pl-9 pr-4 py-2 sm:py-3 lg:py-4 bg-soft rounded-lg sm:rounded-xl lg:rounded-2xl border-none focus:ring-2 focus:ring-primary/20 font-bold text-[10px] sm:text-xs lg:text-base text-muted-text outline-none"
+                            className="w-full pl-10 pr-4 py-3 bg-soft rounded-2xl border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm text-muted-text outline-none transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </div>
 
-                <div className="divide-y divide-gray-50">
+                <div className="flex flex-col divide-y divide-gray-50">
                     {/* Desktop Header */}
-                    <div className="hidden lg:grid grid-cols-[80px_1fr_120px_120px_120px_120px_100px] gap-6 px-10 py-4 bg-soft/50 border-b border-gray-50">
+                    <div className="hidden lg:grid grid-cols-[100px_1fr_120px_100px_140px_120px_120px] gap-6 px-10 py-5 bg-soft/30 border-b border-gray-50">
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Foto</span>
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Produto</span>
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo</span>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tamanho</span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tam</span>
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Categoria</span>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Preço</span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Preço</span>
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Ações</span>
                     </div>
 
@@ -386,80 +424,103 @@ export default function AdminProductsPage() {
                         filteredProducts.map((product) => (
                             <div
                                 key={product.id}
-                                className="dense-row group lg:grid lg:grid-cols-[80px_1fr_120px_120px_120px_120px_100px] lg:gap-6 lg:py-4 lg:px-10 lg:items-center hover:bg-soft/30 transition-colors"
+                                className="group lg:grid lg:grid-cols-[100px_1fr_120px_100px_140px_120px_120px] lg:gap-6 p-4 sm:p-6 lg:px-10 lg:py-5 lg:items-center hover:bg-soft/30 transition-all duration-300 relative"
                             >
-                                {/* Foto */}
-                                <div className="shrink-0">
-                                    <div className="w-9 h-9 sm:w-10 sm:h-10 lg:w-14 lg:h-14 rounded-lg lg:rounded-xl bg-soft flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm">
-                                        {product.image_url ? (
-                                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <ImageIcon className="text-gray-300" size={14} />
-                                        )}
+                                {/* Foto e Status (Mobile/Desktop) */}
+                                <div className="flex items-center gap-4 lg:contents">
+                                    <div className="shrink-0 relative">
+                                        <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-16 lg:h-16 rounded-2xl bg-white flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
+                                            {product.image_url ? (
+                                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            ) : (
+                                                <ImageIcon className="text-gray-200" size={20} />
+                                            )}
+                                        </div>
+                                        {/* Tag de Disponibilidade Mobile */}
+                                        <div className="absolute -top-2 -right-2 lg:hidden">
+                                            {product.available_in_store ? (
+                                                <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm" title="Loja Online" />
+                                            ) : (
+                                                <div className="w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" title="Reservado" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Info Principal - Mobile Context */}
+                                    <div className="flex-1 min-w-0 lg:contents">
+                                        <div className="min-w-0 lg:pr-4">
+                                            <p className="font-black text-muted-text text-sm sm:text-base lg:text-base truncate leading-tight group-hover:text-primary transition-colors">
+                                                {product.name}
+                                            </p>
+                                            <div className="flex flex-wrap items-center gap-2 mt-1 lg:hidden">
+                                                <span className="px-2 py-0.5 rounded-lg bg-soft text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                                                    {product.categories?.name}
+                                                </span>
+                                                {product.size && (
+                                                    <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-[9px] font-black text-primary uppercase tracking-widest whitespace-nowrap">
+                                                        {product.size}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Tipo (Desktop) */}
+                                        <div className="hidden lg:block text-[10px] font-black text-gray-400 uppercase tracking-widest truncate">
+                                            {product.product_types?.name || "—"}
+                                        </div>
+
+                                        {/* Tamanho (Desktop) */}
+                                        <div className="hidden lg:block">
+                                            {product.size ? (
+                                                <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-[10px] font-black text-primary uppercase tracking-widest">
+                                                    {product.size}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-200">—</span>
+                                            )}
+                                        </div>
+
+                                        {/* Categoria (Desktop) */}
+                                        <div className="hidden lg:block text-[10px] font-bold text-gray-500 truncate">
+                                            {product.categories?.name || "Sem categoria"}
+                                        </div>
+
+                                        {/* Preço (Mobile/Desktop) */}
+                                        <div className="lg:text-right">
+                                            <div className="font-black text-muted-text text-base sm:text-lg lg:text-base leading-tight tabular-nums group-hover:scale-105 transition-transform origin-right">
+                                                R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </div>
+                                            {/* Status Badge Desktop Only */}
+                                            <div className="hidden lg:flex items-center justify-end gap-1.5 mt-1">
+                                                {product.available_in_store ? (
+                                                    <span className="text-[8px] font-black text-green-500 uppercase tracking-widest bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">Loja</span>
+                                                ) : product.whatsapp_exclusive ? (
+                                                    <span className="text-[8px] font-black text-primary uppercase tracking-widest bg-primary/5 px-1.5 py-0.5 rounded-full border border-primary/10">Zap</span>
+                                                ) : (
+                                                    <span className="text-[8px] font-black text-red-500 uppercase tracking-widest bg-red-50 px-1.5 py-0.5 rounded-full border border-red-100">Reserv</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Info Principal */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-black text-muted-text text-[11px] sm:text-sm lg:text-base truncate group-hover:text-primary transition-colors leading-tight">{product.name}</div>
-                                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5 lg:hidden">
-                                        {product.available_in_store ? (
-                                            <span className="text-[7.5px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1 leading-none">🟢 Loja</span>
-                                        ) : product.whatsapp_exclusive ? (
-                                            <span className="text-[7.5px] font-black text-primary uppercase tracking-widest flex items-center gap-1 leading-none">💬 Zap</span>
-                                        ) : (
-                                            <span className="text-[7.5px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1 leading-none">🔴 Res</span>
-                                        )}
-                                        <span className="text-[7.5px] font-black text-gray-300 uppercase tracking-widest leading-none truncate max-w-[80px]">{product.categories?.name}</span>
-                                    </div>
-                                </div>
-
-                                {/* Tipo (Desktop Only) */}
-                                <div className="hidden lg:block text-[10px] font-black text-gray-400 uppercase tracking-widest truncate">
-                                    {product.product_types?.name || "—"}
-                                </div>
-
-                                {/* Tamanho (Desktop Only) */}
-                                <div className="hidden lg:block truncate">
-                                    {product.size ? (
-                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-primary/10 text-primary uppercase tracking-widest">{product.size}</span>
-                                    ) : (
-                                        <span className="text-gray-300">—</span>
-                                    )}
-                                </div>
-
-                                {/* Categoria (Desktop Only) */}
-                                <div className="hidden lg:block text-[10px] font-bold text-gray-500 truncate">
-                                    {product.categories?.name || "Sem categoria"}
-                                </div>
-
-                                {/* Preço */}
-                                <div className="text-right flex flex-col items-end lg:items-start">
-                                    <div className="font-black text-muted-text text-xs sm:text-sm lg:text-lg leading-tight tabular-nums">
-                                        R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </div>
-                                    {product.size && (
-                                        <div className="lg:hidden text-[7.5px] font-bold text-gray-300 uppercase tracking-widest leading-none mt-0.5">{product.size}</div>
-                                    )}
-                                </div>
-
-                                {/* Ações Mobile */}
-                                <div className="lg:hidden flex items-center gap-1 ml-2">
-                                    <button onClick={() => handleEdit(product)} className="w-8 h-8 rounded-lg bg-soft flex items-center justify-center text-gray-400 hover:text-primary transition-colors">
-                                        <Edit2 size={12} />
-                                    </button>
-                                    <button onClick={() => handleDelete(product.id)} className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-300 hover:text-red-500 transition-colors">
-                                        <Trash2 size={12} />
-                                    </button>
-                                </div>
-
-                                {/* Ações Desktop */}
-                                <div className="hidden lg:flex items-center justify-center gap-2">
-                                    <button onClick={() => handleEdit(product)} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 transition-all">
+                                {/* Ações (Responsivo) */}
+                                <div className="flex items-center justify-end gap-2 mt-4 lg:mt-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-gray-50 lg:justify-center">
+                                    <button
+                                        onClick={() => handleEdit(product)}
+                                        className="flex-1 lg:flex-none h-10 sm:h-12 lg:w-11 lg:h-11 bg-soft text-gray-400 rounded-xl lg:rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 lg:gap-0 hover:scale-105 active:scale-95"
+                                        title="Editar"
+                                    >
                                         <Edit2 size={16} />
+                                        <span className="font-black text-[10px] uppercase tracking-widest lg:hidden">Editar</span>
                                     </button>
-                                    <button onClick={() => handleDelete(product.id)} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all">
+                                    <button
+                                        onClick={() => handleDelete(product.id)}
+                                        className="flex-1 lg:flex-none h-10 sm:h-12 lg:w-11 lg:h-11 bg-soft text-gray-400 rounded-xl lg:rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 lg:gap-0 hover:scale-105 active:scale-95"
+                                        title="Excluir"
+                                    >
                                         <Trash2 size={16} />
+                                        <span className="font-black text-[10px] uppercase tracking-widest lg:hidden">Excluir</span>
                                     </button>
                                 </div>
                             </div>
@@ -663,6 +724,16 @@ export default function AdminProductsPage() {
                 </div>
             )
             }
+            {confirmModal.isOpen && (
+                <ConfirmModal
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                    onConfirm={confirmModal.onConfirm}
+                />
+            )}
         </div >
     );
 }

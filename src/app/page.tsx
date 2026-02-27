@@ -243,8 +243,18 @@ export default function Home() {
                   {/* Image Area */}
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] m-3 mb-0 bg-soft">
                     <Link href={`/produtos/${product.id}`} className="block h-full w-full">
-                      <div className="absolute inset-0 flex items-center justify-center text-[7rem] group-hover:scale-110 transition-transform duration-700 z-10">
-                        {product.id === 1 ? "🧸" : product.id === 2 ? "🌸" : product.id === 3 ? "👟" : "☁️"}
+                      <div className="absolute inset-0 flex items-center justify-center transition-transform duration-700 z-10 w-full h-full">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                        ) : (
+                          <span className="text-[7rem] group-hover:scale-110 transition-transform duration-700">
+                            {product.id === 1 ? "🧸" : product.id === 2 ? "🌸" : product.id === 3 ? "👟" : "☁️"}
+                          </span>
+                        )}
                       </div>
                       {/* Hover Overlay */}
                       <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity z-10" />

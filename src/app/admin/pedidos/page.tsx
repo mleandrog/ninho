@@ -9,6 +9,7 @@ import {
     ChevronDown, Loader2
 } from "lucide-react";
 import { clsx } from "clsx";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
     pending: { label: "Pendente", icon: Clock, color: "text-yellow-600 bg-yellow-50" },
@@ -33,6 +34,20 @@ export default function AdminOrdersPage() {
     const [filterStatus, setFilterStatus] = useState("");
     const [filterFrom, setFilterFrom] = useState("");
     const [filterTo, setFilterTo] = useState("");
+
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type: "danger" | "info";
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { },
+        type: "info"
+    });
 
     useEffect(() => {
         if (activeTab === "pedidos") fetchOrders();
@@ -80,6 +95,21 @@ export default function AdminOrdersPage() {
     };
 
     const updateStatus = async (id: string, newStatus: string) => {
+        if (newStatus === 'canceled') {
+            setConfirmModal({
+                isOpen: true,
+                title: "Cancelar Pedido",
+                message: "Tem certeza que deseja cancelar este pedido? O estoque será devolvido.",
+                type: "danger",
+                onConfirm: () => executeUpdateStatus(id, newStatus)
+            });
+            return;
+        }
+        executeUpdateStatus(id, newStatus);
+    };
+
+    const executeUpdateStatus = async (id: string, newStatus: string) => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
             if (newStatus === 'canceled') {
                 const res = await fetch("/api/admin/orders/cancel", {
@@ -509,24 +539,31 @@ export default function AdminOrdersPage() {
                         <div className="p-6 lg:p-8 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-between gap-4 sticky bottom-0 z-10">
                             <button
                                 className="px-6 py-4 rounded-2xl font-black text-xs lg:text-sm uppercase tracking-widest text-red-500 bg-red-50 hover:bg-red-100 transition-colors w-full sm:w-auto disabled:opacity-50"
-                                onClick={async () => {
-                                    if (confirm("Deseja expirar esta sacola agora? Os produtos voltarão ao estoque.")) {
-                                        const toastId = toast.loading("Expirando sacola...");
-                                        try {
-                                            const res = await fetch("/api/admin/bags/expire", {
-                                                method: "POST",
-                                                headers: { "Content-Type": "application/json" },
-                                                body: JSON.stringify({ bagId: selectedBag.id }),
-                                            });
-                                            if (!res.ok) throw new Error("Erro ao expirar sacola");
+                                onClick={() => {
+                                    setConfirmModal({
+                                        isOpen: true,
+                                        title: "Expirar Sacola",
+                                        message: "Deseja expirar esta sacola agora? Os produtos voltarão ao estoque.",
+                                        type: "danger",
+                                        onConfirm: async () => {
+                                            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                            const toastId = toast.loading("Expirando sacola...");
+                                            try {
+                                                const res = await fetch("/api/admin/bags/expire", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({ bagId: selectedBag.id }),
+                                                });
+                                                if (!res.ok) throw new Error("Erro ao expirar sacola");
 
-                                            toast.success("Sacola expirada e estoque devolvido!", { id: toastId });
-                                            setBags(prev => prev.map(b => b.id === selectedBag.id ? { ...b, status: 'expired' } : b));
-                                            setSelectedBag(null);
-                                        } catch (err: any) {
-                                            toast.error(err.message, { id: toastId });
+                                                toast.success("Sacola expirada e estoque devolvido!", { id: toastId });
+                                                setBags(prev => prev.map(b => b.id === selectedBag.id ? { ...b, status: 'expired' } : b));
+                                                setSelectedBag(null);
+                                            } catch (err: any) {
+                                                toast.error(err.message, { id: toastId });
+                                            }
                                         }
-                                    }
+                                    });
                                 }}
                             >
                                 Expirar e Devolver
@@ -635,6 +672,16 @@ export default function AdminOrdersPage() {
                         </div>
                     </div>
                 </div>
+            )}
+            {confirmModal.isOpen && (
+                <ConfirmModal
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                    onConfirm={confirmModal.onConfirm}
+                />
             )}
         </div>
     );

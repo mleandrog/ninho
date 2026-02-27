@@ -11,6 +11,7 @@ import {
     Instagram, Facebook
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type TabType = "geral" | "pagamentos" | "whatsapp" | "sacolas" | "landing" | "produtos";
 
@@ -30,6 +31,20 @@ export default function AdminSettingsPage() {
     const [finalMessageTemplates, setFinalMessageTemplates] = useState<any[]>([]);
     const [loadingTemplates, setLoadingTemplates] = useState(false);
     const [newTemplate, setNewTemplate] = useState({ title: "", content: "", type: "rule" as "rule" | "final" });
+
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type: "danger" | "info";
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { },
+        type: "info"
+    });
 
     useEffect(() => {
         fetchSettings();
@@ -76,8 +91,18 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const handleDeleteTemplate = async (id: string, type: "rule" | "final") => {
-        if (!confirm("Excluir este template?")) return;
+    const handleDeleteTemplate = (id: string, type: "rule" | "final") => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Excluir Template",
+            message: "Tem certeza que deseja excluir este modelo de mensagem?",
+            type: "danger",
+            onConfirm: () => executeDeleteTemplate(id, type)
+        });
+    };
+
+    const executeDeleteTemplate = async (id: string, type: "rule" | "final") => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
         const table = type === "rule" ? "whatsapp_rule_templates" : "whatsapp_final_message_templates";
 
         try {
@@ -111,8 +136,18 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const handleDeleteProductType = async (id: string) => {
-        if (!confirm("Excluir este tipo de produto?")) return;
+    const handleDeleteProductType = (id: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Excluir Tipo de Produto",
+            message: "Deseja remover este tipo de produto? Isso pode afetar os produtos já cadastrados.",
+            type: "danger",
+            onConfirm: () => executeDeleteProductType(id)
+        });
+    };
+
+    const executeDeleteProductType = async (id: string) => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
             const { error } = await supabase.from("product_types").delete().eq("id", id);
             if (error) throw error;
@@ -325,13 +360,13 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                 </Button>
             </header>
 
-            {/* Navegação por Abas */}
-            <div className="flex bg-white p-1 rounded-xl sm:rounded-[2rem] shadow-premium border border-white gap-1 mb-6 sm:mb-8 overflow-x-auto no-scrollbar">
+            {/* Navegação por Abas - Ajustada para não rolar */}
+            <div className="flex flex-wrap bg-white p-1 rounded-xl sm:rounded-[2rem] shadow-premium border border-white gap-1 mb-6 sm:mb-8">
                 {(["geral", "pagamentos", "whatsapp", "sacolas", "landing", "produtos"] as TabType[]).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`flex-none sm:flex-1 px-4 sm:px-8 py-2.5 sm:py-4 rounded-lg sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all uppercase tracking-widest whitespace-nowrap ${activeTab === tab
+                        className={`flex-1 min-w-[120px] px-4 sm:px-8 py-2.5 sm:py-4 rounded-lg sm:rounded-2xl font-black text-[10px] sm:text-sm transition-all uppercase tracking-widest ${activeTab === tab
                             ? "bg-primary text-white shadow-vibrant"
                             : "text-gray-400 hover:text-muted-text hover:bg-soft"
                             }`}
@@ -944,6 +979,16 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                     </section>
                 )}
             </div>
+            {confirmModal.isOpen && (
+                <ConfirmModal
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                    onConfirm={confirmModal.onConfirm}
+                />
+            )}
         </div>
     );
 }

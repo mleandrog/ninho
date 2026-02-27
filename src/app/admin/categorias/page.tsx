@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
 import { Plus, Search, Edit2, Trash2, FolderTree, X, Loader2, Lock, Globe } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type Level = { id: string; name: string; label: string; color: string };
 type Category = { id: number; name: string; slug: string; allowed_levels?: string[] };
@@ -20,6 +21,19 @@ export default function AdminCategoriesPage() {
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({ name: "", slug: "" });
     const [selectedLevelIds, setSelectedLevelIds] = useState<string[]>([]);
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type: "danger" | "info";
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { },
+        type: "info"
+    });
 
     useEffect(() => {
         fetchLevels();
@@ -110,8 +124,18 @@ export default function AdminCategoriesPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Deseja realmente excluir esta categoria?")) return;
+    const handleDelete = (id: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Excluir Categoria",
+            message: "Deseja realmente excluir esta categoria? Os produtos vinculados podem ficar sem categoria.",
+            type: "danger",
+            onConfirm: () => executeDelete(id)
+        });
+    };
+
+    const executeDelete = async (id: number) => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
         const toastId = toast.loading("Excluindo...");
         try {
             await supabase.from("category_level_access").delete().eq("category_id", id);
@@ -156,61 +180,90 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div className="bg-white rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] shadow-premium border border-white overflow-hidden">
-                <div className="flex flex-col">
+                <div className="flex flex-col divide-y divide-gray-50">
                     {loading ? (
-                        <div className="px-8 py-20 text-center font-bold text-gray-400 animate-pulse">Carregando...</div>
+                        <div className="px-8 py-20 text-center flex flex-col items-center gap-4">
+                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando categorias...</span>
+                        </div>
                     ) : filtered.length === 0 ? (
-                        <div className="px-8 py-20 text-center font-bold text-gray-400">Nenhuma encontrada.</div>
+                        <div className="px-8 py-20 text-center flex flex-col items-center gap-4">
+                            <FolderTree size={40} className="text-gray-100" />
+                            <span className="text-sm font-bold text-gray-400">Nenhuma categoria encontrada.</span>
+                        </div>
                     ) : filtered.map(cat => (
                         <div
                             key={cat.id}
-                            className="dense-row group lg:grid lg:grid-cols-[1fr_1.5fr_auto] lg:gap-6 lg:py-4 lg:px-10 lg:items-center border-b border-gray-50 last:border-0 hover:bg-soft/30 transition-colors"
+                            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 lg:px-10 hover:bg-soft/30 transition-all duration-300"
                         >
-                            {/* Nome & Slug */}
-                            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-soft rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0">
-                                    <FolderTree size={14} className="text-gray-400 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+                            {/* Info Principal */}
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-soft rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                    <FolderTree size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="font-black text-muted-text text-[11px] sm:text-sm lg:text-base truncate leading-tight group-hover:text-primary transition-colors">{cat.name}</p>
-                                    <code className="text-[7.5px] sm:text-[9px] lg:text-[10px] bg-soft px-1.5 py-0.5 rounded-md text-gray-400 font-bold leading-none mt-1">{cat.slug}</code>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-black text-muted-text text-sm sm:text-base lg:text-lg truncate leading-tight group-hover:text-primary transition-colors">
+                                            {cat.name}
+                                        </p>
+
+                                        {/* Badge de Acesso Mobile/Inline */}
+                                        <div className="flex items-center gap-1.5">
+                                            {(!cat.allowed_levels || cat.allowed_levels.length === 0) ? (
+                                                <span className="flex items-center gap-1 text-[8px] sm:text-[10px] font-black text-green-500 uppercase tracking-widest bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                                                    <Globe size={10} /> Pública
+                                                </span>
+                                            ) : (
+                                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                                                    <Lock size={10} className="text-amber-500" />
+                                                    <span className="text-[8px] sm:text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                                                        Restrita ({cat.allowed_levels.length})
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <code className="text-[8px] sm:text-[10px] bg-soft group-hover:bg-white px-2 py-0.5 rounded-md text-gray-400 font-black leading-none uppercase tracking-wider">
+                                            /{cat.slug}
+                                        </code>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Acesso */}
-                            <div className="flex flex-wrap items-center gap-1.5 lg:gap-2 justify-end lg:justify-start">
-                                {(!cat.allowed_levels || cat.allowed_levels.length === 0) ? (
-                                    <span className="flex items-center gap-1 text-green-500 font-black text-[7.5px] sm:text-[9px] lg:text-[10px] uppercase tracking-widest leading-none">
-                                        <Globe size={10} className="sm:w-3 sm:h-3" /> Pública
-                                    </span>
-                                ) : (
-                                    <>
-                                        <Lock size={10} className="text-gray-300 sm:w-3 sm:h-3" />
-                                        {cat.allowed_levels.map(lid => {
-                                            const lvl = levels.find(l => l.id === lid);
-                                            return lvl ? (
-                                                <span key={lid} className="px-1.5 py-0.5 rounded-md text-white text-[7.5px] sm:text-[9px] lg:text-[10px] font-black uppercase tracking-widest shadow-sm leading-none" style={{ backgroundColor: lvl.color }}>
-                                                    {lvl.label}
-                                                </span>
-                                            ) : null;
-                                        })}
-                                    </>
-                                )}
-                            </div>
+                            {/* Detalhes de Níveis (Desktop) */}
+                            {cat.allowed_levels && cat.allowed_levels.length > 0 && (
+                                <div className="hidden lg:flex flex-wrap items-center gap-2 flex-1 justify-center px-4">
+                                    {cat.allowed_levels.map(lid => {
+                                        const lvl = levels.find(l => l.id === lid);
+                                        return lvl ? (
+                                            <span
+                                                key={lid}
+                                                className="px-2.5 py-1 rounded-lg text-white text-[9px] font-black uppercase tracking-widest shadow-sm hover:scale-105 transition-transform cursor-default"
+                                                style={{ backgroundColor: lvl.color }}
+                                            >
+                                                {lvl.label}
+                                            </span>
+                                        ) : null;
+                                    })}
+                                </div>
+                            )}
 
                             {/* Ações */}
-                            <div className="flex items-center justify-end gap-1.5 sm:gap-2 ml-2">
+                            <div className="flex items-center justify-end gap-2 shrink-0">
                                 <button
                                     onClick={() => handleOpenModal(cat)}
-                                    className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-soft text-gray-400 rounded-lg lg:rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center shrink-0"
+                                    className="w-10 h-10 lg:w-12 lg:h-12 bg-soft text-gray-400 rounded-xl lg:rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center hover:scale-110 active:scale-95"
+                                    title="Editar"
                                 >
-                                    <Edit2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                                    <Edit2 size={16} />
                                 </button>
                                 <button
                                     onClick={() => handleDelete(cat.id)}
-                                    className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-soft text-gray-400 rounded-lg lg:rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center shrink-0"
+                                    className="w-10 h-10 lg:w-12 lg:h-12 bg-soft text-gray-400 rounded-xl lg:rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center hover:scale-110 active:scale-95"
+                                    title="Excluir"
                                 >
-                                    <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                         </div>
@@ -287,6 +340,16 @@ export default function AdminCategoriesPage() {
                         </form>
                     </div>
                 </div>
+            )}
+            {confirmModal.isOpen && (
+                <ConfirmModal
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                    onConfirm={confirmModal.onConfirm}
+                />
             )}
         </div>
     );
