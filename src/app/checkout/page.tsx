@@ -92,14 +92,22 @@ export default function CheckoutPage() {
                     if (km !== null) {
                         setDistance(km);
                         // Regra de frete: R$ 5 fixo + R$ 2 por km
-                        const fee = 5 + (km * 2);
+                        let fee = 5 + (km * 2);
+
+                        // Aplicar frete grátis
+                        const minFree = Number(storeConfig?.free_shipping_min_order || 0);
+                        if (minFree > 0 && totalPrice() >= minFree) {
+                            fee = 0;
+                            toast.success("Parabéns! Você ganhou Frete Grátis.");
+                        }
+
                         setShippingFee(Math.ceil(fee));
                     }
                 }
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [address.zipcode, shippingMethod, storeConfig]);
+    }, [address.zipcode, shippingMethod, storeConfig, totalPrice]);
 
     useEffect(() => {
         if (items.length === 0) {

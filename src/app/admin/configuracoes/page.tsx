@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/Input";
 import {
     Settings, Save, Info, MapPin, CreditCard,
     MessageSquare, Loader2, Smartphone, Plus, Trash2,
-    Shield, Bold, Italic, ShoppingBag, LayoutTemplate, Phone, Mail
+    Shield, Bold, Italic, ShoppingBag, LayoutTemplate, Phone, Mail,
+    Instagram, Facebook
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -24,10 +25,70 @@ export default function AdminSettingsPage() {
     const [newProductType, setNewProductType] = useState("");
     const [isAddingType, setIsAddingType] = useState(false);
 
+    // Message Templates
+    const [ruleTemplates, setRuleTemplates] = useState<any[]>([]);
+    const [finalMessageTemplates, setFinalMessageTemplates] = useState<any[]>([]);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
+    const [newTemplate, setNewTemplate] = useState({ title: "", content: "", type: "rule" as "rule" | "final" });
+
     useEffect(() => {
         fetchSettings();
         fetchProductTypes();
+        fetchTemplates();
     }, []);
+
+    const fetchTemplates = async () => {
+        setLoadingTemplates(true);
+        try {
+            const [rulesRes, finalsRes] = await Promise.all([
+                supabase.from("whatsapp_rule_templates").select("*").order("title"),
+                supabase.from("whatsapp_final_message_templates").select("*").order("title")
+            ]);
+            setRuleTemplates(rulesRes.data || []);
+            setFinalMessageTemplates(finalsRes.data || []);
+        } catch (error) {
+            console.error("Erro ao buscar templates:", error);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    const handleAddTemplate = async () => {
+        if (!newTemplate.title || !newTemplate.content) {
+            return toast.error("Preencha o título e o conteúdo do template.");
+        }
+
+        const table = newTemplate.type === "rule" ? "whatsapp_rule_templates" : "whatsapp_final_message_templates";
+
+        try {
+            const { error } = await supabase.from(table).insert([{
+                title: newTemplate.title,
+                content: newTemplate.content
+            }]);
+
+            if (error) throw error;
+
+            toast.success("Template adicionado!");
+            setNewTemplate({ title: "", content: "", type: newTemplate.type });
+            fetchTemplates();
+        } catch (error: any) {
+            toast.error("Erro ao adicionar template: " + error.message);
+        }
+    };
+
+    const handleDeleteTemplate = async (id: string, type: "rule" | "final") => {
+        if (!confirm("Excluir este template?")) return;
+        const table = type === "rule" ? "whatsapp_rule_templates" : "whatsapp_final_message_templates";
+
+        try {
+            const { error } = await supabase.from(table).delete().eq("id", id);
+            if (error) throw error;
+            toast.success("Template removido!");
+            fetchTemplates();
+        } catch (error: any) {
+            toast.error("Erro ao remover template: " + error.message);
+        }
+    };
 
     const fetchProductTypes = async () => {
         const { data } = await supabase.from("product_types").select("*").order("name");
@@ -118,10 +179,7 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                 default_interval_seconds: settings.default_interval_seconds,
                 cart_expiration_minutes: settings.cart_expiration_minutes,
                 payment_expiration_minutes: settings.payment_expiration_minutes,
-                asaas_pix_enabled: settings.asaas_pix_enabled,
                 asaas_card_enabled: settings.asaas_card_enabled,
-                store_lat: parseFloat(String(settings.store_lat).replace(',', '.')) || null,
-                store_lng: parseFloat(String(settings.store_lng).replace(',', '.')) || null,
                 store_address: settings.store_address,
                 store_cep: settings.store_cep,
                 bag_max_days: Number(settings.bag_max_days) || 30,
@@ -186,29 +244,36 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
         }, 10);
     };
 
-    const handleCepBlur = async () => {
-        const cep = settings.store_cep?.replace(/\D/g, "");
-        if (cep && cep.length === 8) {
+    const handleCepChange = async (value: string) => {
+        const cleanCep = value.replace(/\D/g, "");
+        setSettings({ ...settings, store_cep: value });
+
+        if (cleanCep.length === 8) {
             try {
-                const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
                 const data = await res.json();
                 if (!data.erro) {
                     const fullAddress = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`;
-                    setSettings({ ...settings, store_address: fullAddress });
+                    setSettings((prev: any) => ({
+                        ...prev,
+                        store_address: fullAddress,
+                        store_cep: value
+                    }));
                     toast.success("Endereço preenchido!");
 
-                    // Buscar coordenadas
-                    // Importante: Removendo o bairro da string para aumentar a taxa de sucesso do Nominatim OpenStreetMap
+                    // Buscar coordenadas silenciosamente
                     const searchAddress = `${data.logradouro}, ${data.localidade} - ${data.uf}`;
-                    const coordsRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=1`);
-                    const coordsData = await coordsRes.json();
-                    if (coordsData && coordsData.length > 0) {
-                        setSettings((prev: any) => ({
-                            ...prev,
-                            store_lat: String(coordsData[0].lat),
-                            store_lng: String(coordsData[0].lon)
-                        }));
-                    }
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=1`)
+                        .then(r => r.json())
+                        .then(coordsData => {
+                            if (coordsData && coordsData.length > 0) {
+                                setSettings((prev: any) => ({
+                                    ...prev,
+                                    store_lat: String(coordsData[0].lat),
+                                    store_lng: String(coordsData[0].lon)
+                                }));
+                            }
+                        }).catch(console.error);
                 }
             } catch (e) {
                 console.error("Erro ao buscar CEP:", e);
@@ -324,80 +389,58 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                                 </div>
                             </div>
 
-                            <div className="grid md:grid-cols-4 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">CEP</label>
+                            <div className="space-y-6">
+                                <div className="max-w-xs space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">CEP Oficial da Loja</label>
                                     <input
                                         type="text"
                                         className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                                         placeholder="00000-000"
                                         value={settings.store_cep || ""}
-                                        onChange={e => setSettings({ ...settings, store_cep: e.target.value })}
-                                        onBlur={handleCepBlur}
+                                        onChange={e => handleCepChange(e.target.value)}
                                     />
                                 </div>
-                                <div className="md:col-span-3 space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Logradouro (Rua, Bairro, Cidade)</label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                        placeholder="Carregando automaticamente via CEP..."
-                                        value={settings.store_address || ""}
-                                        onChange={e => setSettings({ ...settings, store_address: e.target.value })}
-                                    />
-                                </div>
-                            </div>
 
-                            <div className="grid md:grid-cols-2 gap-6 mt-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Número</label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                        value={settings.store_number || ""}
-                                        onChange={e => setSettings({ ...settings, store_number: e.target.value })}
-                                        placeholder="Ex: 123"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Complemento</label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                        value={settings.store_complement || ""}
-                                        onChange={e => setSettings({ ...settings, store_complement: e.target.value })}
-                                        placeholder="Ex: Sala 2 / Loja A"
-                                    />
-                                </div>
-                            </div>
+                                {settings.store_address && (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Endereço (Rua, Bairro, Cidade)</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                placeholder="Endereço encontrado..."
+                                                value={settings.store_address || ""}
+                                                onChange={e => setSettings({ ...settings, store_address: e.target.value })}
+                                            />
+                                        </div>
 
-                            <div className="grid md:grid-cols-2 gap-6 bg-soft/50 p-6 rounded-[2rem] border border-white/50 mt-6 mt-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center justify-between">
-                                        Latitude
-                                        <span className="text-[8px] text-primary normal-case">Busca automática via CEP</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
-                                        value={settings.store_lat ?? ""}
-                                        onChange={e => setSettings({ ...settings, store_lat: e.target.value })}
-                                        placeholder="Ex: -23.550520"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center justify-between">
-                                        Longitude
-                                        <span className="text-[8px] text-primary normal-case">Busca automática via CEP</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
-                                        value={settings.store_lng ?? ""}
-                                        onChange={e => setSettings({ ...settings, store_lng: e.target.value })}
-                                        placeholder="Ex: -46.633308"
-                                    />
-                                </div>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex justify-between items-center">
+                                                    Número
+                                                    {!settings.store_number && <span className="text-[8px] text-red-400 font-black animate-pulse">Obrigatório p/ Frete</span>}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className={`w-full p-5 rounded-2xl border-none font-bold text-sm outline-none transition-all ${!settings.store_number ? "bg-red-50 ring-2 ring-red-100 placeholder:text-red-200" : "bg-soft focus:ring-2 focus:ring-primary/20"}`}
+                                                    value={settings.store_number || ""}
+                                                    onChange={e => setSettings({ ...settings, store_number: e.target.value })}
+                                                    placeholder="Digite o número"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Complemento</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                                    value={settings.store_complement || ""}
+                                                    onChange={e => setSettings({ ...settings, store_complement: e.target.value })}
+                                                    placeholder="Ex: Sala 2 / Próximo ao..."
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </section>
@@ -443,14 +486,34 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                                     <div className="space-y-1.5 sm:space-y-2">
                                         <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Carrinho</label>
                                         <input type="number" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm"
-                                            value={settings.cart_expiration_minutes}
+                                            value={settings?.cart_expiration_minutes || 0}
                                             onChange={e => setSettings({ ...settings, cart_expiration_minutes: parseInt(e.target.value) })} />
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
                                         <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Pagamento</label>
                                         <input type="number" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm"
-                                            value={settings.payment_expiration_minutes}
+                                            value={settings?.payment_expiration_minutes || 0}
                                             onChange={e => setSettings({ ...settings, payment_expiration_minutes: parseInt(e.target.value) })} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 sm:space-y-4">
+                                <h3 className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Regras de Frete</h3>
+                                <div className="space-y-3 sm:space-y-4">
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Frete Grátis acima de (R$)</label>
+                                        <input type="number" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm"
+                                            value={settings?.free_shipping_min_order || 0}
+                                            onChange={e => setSettings({ ...settings, free_shipping_min_order: parseFloat(e.target.value) })} />
+                                        <p className="text-[9px] text-gray-400 font-bold px-1">Valor 0 desativa a regra.</p>
+                                    </div>
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Taxa do Entregador (R$)</label>
+                                        <input type="number" className="w-full p-4 sm:p-5 bg-soft rounded-xl sm:rounded-2xl border-none font-bold text-xs sm:text-sm"
+                                            value={settings?.delivery_man_fee || 0}
+                                            onChange={e => setSettings({ ...settings, delivery_man_fee: parseFloat(e.target.value) })} />
+                                        <p className="text-[9px] text-gray-400 font-bold px-1">Quanto o entregador recebe em fretes grátis.</p>
                                     </div>
                                 </div>
                             </div>
@@ -488,7 +551,7 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                             <div className="grid md:grid-cols-2 gap-6 pt-4">
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center px-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regras Padrão (Fixa)</label>
                                         <div className="flex gap-1 items-center bg-soft p-1 rounded-xl border border-white/50">
                                             <button onClick={() => insertFormat('rules_message', '*')} className="p-1.5 hover:bg-white rounded-lg transition-all text-primary" title="Negrito">
                                                 <Bold size={12} />
@@ -514,7 +577,7 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center px-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final Padrão</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final Padrão (Fixa)</label>
                                         <div className="flex gap-1 items-center bg-soft p-1 rounded-xl border border-white/50">
                                             <button onClick={() => insertFormat('final_message', '*')} className="p-1.5 hover:bg-white rounded-lg transition-all text-primary" title="Negrito">
                                                 <Bold size={12} />
@@ -537,6 +600,94 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                                         onChange={e => setSettings({ ...settings, final_message: e.target.value })}
                                         placeholder="Mensagem exibida ao finalizar o pedido..."
                                     />
+                                </div>
+                            </div>
+
+                            {/* Gerenciamento de Templates */}
+                            <div className="pt-8 border-t border-gray-100">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                                        <LayoutTemplate size={20} />
+                                    </div>
+                                    <h3 className="text-xl font-black text-muted-text">Modelos de Mensagem (Templates)</h3>
+                                </div>
+
+                                <div className="bg-soft/50 p-6 rounded-[2rem] border border-white space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Novo Template</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Título do template (ex: Regras Promocionais)"
+                                                className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
+                                                value={newTemplate.title}
+                                                onChange={e => setNewTemplate({ ...newTemplate, title: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Tipo</label>
+                                            <select
+                                                className="w-full p-4 bg-white rounded-xl border-none font-bold text-xs"
+                                                value={newTemplate.type}
+                                                onChange={e => setNewTemplate({ ...newTemplate, type: e.target.value as any })}
+                                            >
+                                                <option value="rule">Regra</option>
+                                                <option value="final">Mensagem Final</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Conteúdo</label>
+                                        <textarea
+                                            placeholder="Conteúdo da mensagem..."
+                                            className="w-full p-4 bg-white rounded-xl border-none font-medium text-xs h-24"
+                                            value={newTemplate.content}
+                                            onChange={e => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                                        />
+                                    </div>
+                                    <Button onClick={handleAddTemplate} className="w-full h-12 rounded-xl font-black gap-2">
+                                        <Plus size={18} /> Cadastrar Template
+                                    </Button>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                                        {/* Listagem de Regras */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Regras Cadastradas</h4>
+                                            <div className="space-y-3">
+                                                {ruleTemplates.length === 0 && <p className="text-[10px] text-gray-400 font-bold italic px-1">Nenhum template de regra.</p>}
+                                                {ruleTemplates.map(t => (
+                                                    <div key={t.id} className="bg-white p-4 rounded-xl border border-white/50 flex justify-between items-start group">
+                                                        <div>
+                                                            <p className="font-black text-xs text-muted-text">{t.title}</p>
+                                                            <p className="text-[10px] text-gray-400 line-clamp-2 mt-1">{t.content}</p>
+                                                        </div>
+                                                        <button onClick={() => handleDeleteTemplate(t.id, 'rule')} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Listagem de Mensagens Finais */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Mensagens Finais</h4>
+                                            <div className="space-y-3">
+                                                {finalMessageTemplates.length === 0 && <p className="text-[10px] text-gray-400 font-bold italic px-1">Nenhum template de mensagem final.</p>}
+                                                {finalMessageTemplates.map(t => (
+                                                    <div key={t.id} className="bg-white p-4 rounded-xl border border-white/50 flex justify-between items-start group">
+                                                        <div>
+                                                            <p className="font-black text-xs text-muted-text">{t.title}</p>
+                                                            <p className="text-[10px] text-gray-400 line-clamp-2 mt-1">{t.content}</p>
+                                                        </div>
+                                                        <button onClick={() => handleDeleteTemplate(t.id, 'final')} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -649,6 +800,49 @@ Seu pedido da categoria {categoryName} foi registrado. Em breve entraremos em co
                                     onChange={e => setSettings({ ...settings, promo_bar_text: e.target.value })}
                                     placeholder="Ex: ✨ Frete Grátis acima de R$ 300"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Redes Sociais */}
+                        <div className="space-y-6">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-3">🌐 Redes Sociais</h3>
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                                        <Instagram size={12} /> Instagram (URL)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.instagram_url || ''}
+                                        onChange={e => setSettings({ ...settings, instagram_url: e.target.value })}
+                                        placeholder="https://instagram.com/seuperfil"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                                        <Phone size={12} /> WhatsApp (URL)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.whatsapp_url || ''}
+                                        onChange={e => setSettings({ ...settings, whatsapp_url: e.target.value })}
+                                        placeholder="https://wa.me/55..."
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                                        <Facebook size={12} /> Facebook (URL)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-5 bg-soft rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={settings?.facebook_url || ''}
+                                        onChange={e => setSettings({ ...settings, facebook_url: e.target.value })}
+                                        placeholder="https://facebook.com/suapagina"
+                                    />
+                                </div>
                             </div>
                         </div>
 

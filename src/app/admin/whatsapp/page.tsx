@@ -103,6 +103,10 @@ export default function AdminWhatsAppDashboard() {
     const [fetchingGroups, setFetchingGroups] = useState(false);
     const [showGroupSelector, setShowGroupSelector] = useState(false);
 
+    // Templates state
+    const [ruleTemplates, setRuleTemplates] = useState<any[]>([]);
+    const [finalMessageTemplates, setFinalMessageTemplates] = useState<any[]>([]);
+
     useEffect(() => {
         setMounted(true);
         fetchInitialData();
@@ -158,7 +162,7 @@ export default function AdminWhatsAppDashboard() {
     const fetchInitialData = async () => {
         // Removemos o setLoading(true) do polling para não ficar piscando
         try {
-            const [catRes, grpRes, setRes, campRes] = await Promise.all([
+            const [catRes, grpRes, setRes, campRes, rulesRes, finalsRes] = await Promise.all([
                 supabase.from("categories").select(`
                     id, 
                     name, 
@@ -173,11 +177,15 @@ export default function AdminWhatsAppDashboard() {
                     .from("whatsapp_campaigns")
                     .select("*, categories:category_id(name)")
                     .order("created_at", { ascending: false }),
+                supabase.from("whatsapp_rule_templates").select("*").order("title"),
+                supabase.from("whatsapp_final_message_templates").select("*").order("title"),
             ]);
             setCategories(catRes.data || []);
             setGroups(grpRes.data || []);
             setSettings(setRes.data);
             setCampaigns((campRes.data as Campaign[]) || []);
+            setRuleTemplates(rulesRes.data || []);
+            setFinalMessageTemplates(finalsRes.data || []);
         } catch (err) {
             console.error(err);
         } finally {
@@ -1175,13 +1183,28 @@ export default function AdminWhatsAppDashboard() {
                                         <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black">2</div>
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem de Regras</label>
                                     </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
-                                        <button type="button" onClick={() => insertText('rules_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
-                                        <button type="button" onClick={() => insertText('rules_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
-                                        <div className="w-px h-4 bg-gray-200 mx-1" />
-                                        <button type="button" onClick={() => insertEmoji('rules_message', '📋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📋</button>
-                                        <button type="button" onClick={() => insertEmoji('rules_message', '📦')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📦</button>
-                                        <button type="button" onClick={() => insertEmoji('rules_message', '✅')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✅</button>
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            className="p-1.5 bg-soft rounded-lg text-[9px] font-black uppercase tracking-widest border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20"
+                                            onChange={(e) => {
+                                                const template = ruleTemplates.find(t => t.id === e.target.value);
+                                                if (template) setForm({ ...form, rules_message: template.content });
+                                            }}
+                                            value=""
+                                        >
+                                            <option value="">Aplicar Template</option>
+                                            {ruleTemplates.map(t => (
+                                                <option key={t.id} value={t.id}>{t.title}</option>
+                                            ))}
+                                        </select>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                            <button type="button" onClick={() => insertText('rules_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                            <button type="button" onClick={() => insertText('rules_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                                            <button type="button" onClick={() => insertEmoji('rules_message', '📋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📋</button>
+                                            <button type="button" onClick={() => insertEmoji('rules_message', '📦')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">📦</button>
+                                            <button type="button" onClick={() => insertEmoji('rules_message', '✅')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">✅</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <textarea placeholder="📋 Nossas regras: Para comprar, envie o código do produto..."
@@ -1240,13 +1263,28 @@ export default function AdminWhatsAppDashboard() {
                                         <div className="w-6 h-6 rounded-full bg-soft text-gray-400 flex items-center justify-center text-[10px] font-black">4</div>
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Final</label>
                                     </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
-                                        <button type="button" onClick={() => insertText('final_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
-                                        <button type="button" onClick={() => insertText('final_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
-                                        <div className="w-px h-4 bg-gray-200 mx-1" />
-                                        <button type="button" onClick={() => insertEmoji('final_message', '🛒')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛒</button>
-                                        <button type="button" onClick={() => insertEmoji('final_message', '👋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">👋</button>
-                                        <button type="button" onClick={() => insertEmoji('final_message', '💙')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">💙</button>
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            className="p-1.5 bg-soft rounded-lg text-[9px] font-black uppercase tracking-widest border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20"
+                                            onChange={(e) => {
+                                                const template = finalMessageTemplates.find(t => t.id === e.target.value);
+                                                if (template) setForm({ ...form, final_message: template.content });
+                                            }}
+                                            value=""
+                                        >
+                                            <option value="">Aplicar Template</option>
+                                            {finalMessageTemplates.map(t => (
+                                                <option key={t.id} value={t.id}>{t.title}</option>
+                                            ))}
+                                        </select>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover/tools:opacity-100 transition-opacity bg-soft p-1 rounded-xl">
+                                            <button type="button" onClick={() => insertText('final_message', '*')} className="w-7 h-7 flex items-center justify-center text-[10px] font-black hover:bg-white rounded-lg transition-colors" title="Negrito">B</button>
+                                            <button type="button" onClick={() => insertText('final_message', '_')} className="w-7 h-7 flex items-center justify-center text-[10px] italic font-serif hover:bg-white rounded-lg transition-colors" title="Itálico">I</button>
+                                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                                            <button type="button" onClick={() => insertEmoji('final_message', '🛒')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">🛒</button>
+                                            <button type="button" onClick={() => insertEmoji('final_message', '👋')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">👋</button>
+                                            <button type="button" onClick={() => insertEmoji('final_message', '💙')} className="w-7 h-7 flex items-center justify-center text-xs hover:bg-white rounded-lg transition-colors">💙</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <textarea placeholder="É isso! Esses são todos os produtos disponíveis. Para comprar, responda com o código! 🛒"

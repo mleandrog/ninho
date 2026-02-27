@@ -25,7 +25,7 @@ export default function Home() {
     try {
       const { data } = await supabase
         .from('whatsapp_settings')
-        .select('hero_title, hero_subtitle, hero_badge_text, promo_bar_text, footer_phone, footer_email, footer_about')
+        .select('hero_title, hero_subtitle, hero_badge_text, promo_bar_text, footer_phone, footer_email, footer_about, instagram_url, whatsapp_url, facebook_url')
         .limit(1)
         .single();
       if (data) setLandingSettings(data);
@@ -352,11 +352,26 @@ export default function Home() {
               {footerAbout}
             </p>
             <div className="flex gap-5">
-              {['📸', '💬', '🐦', '✉️'].map((ico, i) => (
-                <div key={i} className="w-14 h-14 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer border border-white/5 active:scale-90">
-                  {ico}
-                </div>
-              ))}
+              {landingSettings?.instagram_url && (
+                <a href={landingSettings.instagram_url} target="_blank" rel="noreferrer" className="w-14 h-14 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer border border-white/5 active:scale-90" title="Instagram">
+                  📸
+                </a>
+              )}
+              {landingSettings?.whatsapp_url && (
+                <a href={landingSettings.whatsapp_url} target="_blank" rel="noreferrer" className="w-14 h-14 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer border border-white/5 active:scale-90" title="WhatsApp">
+                  💬
+                </a>
+              )}
+              {landingSettings?.facebook_url && (
+                <a href={landingSettings.facebook_url} target="_blank" rel="noreferrer" className="w-14 h-14 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer border border-white/5 active:scale-90" title="Facebook">
+                  🌐
+                </a>
+              )}
+              {footerEmail && (
+                <a href={`mailto:${footerEmail}`} className="w-14 h-14 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer border border-white/5 active:scale-90" title="E-mail">
+                  ✉️
+                </a>
+              )}
             </div>
           </div>
 

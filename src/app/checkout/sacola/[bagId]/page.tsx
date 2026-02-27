@@ -29,10 +29,17 @@ export default function BagCheckoutPage({
 
     // Payment
     const [paymentResult, setPaymentResult] = useState<any>(null);
+    const [freeShippingMin, setFreeShippingMin] = useState(0);
 
     useEffect(() => {
         fetchBag();
+        fetchSettings();
     }, []);
+
+    const fetchSettings = async () => {
+        const { data } = await supabase.from('whatsapp_settings').select('free_shipping_min_order').limit(1).single();
+        if (data?.free_shipping_min_order) setFreeShippingMin(Number(data.free_shipping_min_order));
+    };
 
     const fetchBag = async () => {
         const { data, error } = await supabase
@@ -73,11 +80,23 @@ export default function BagCheckoutPage({
                     const coords = await deliveryService.getCoordsFromAddress(fullAddr);
                     if (coords) {
                         const fee = await deliveryService.calculateFee(coords.lat, coords.lng);
-                        setShippingFee(fee);
-                        toast.success(`Frete calculado: R$ ${fee.toFixed(2)}`);
+                        const itemsTotal = bag.bag_items.reduce((acc: number, item: any) => acc + (Number(item.products?.price || 0) * item.quantity), 0);
+
+                        if (freeShippingMin > 0 && itemsTotal >= freeShippingMin) {
+                            setShippingFee(0);
+                            toast.success(`Parabéns! Você ganhou Frete Grátis.`);
+                        } else {
+                            setShippingFee(fee);
+                            toast.success(`Frete calculado: R$ ${fee.toFixed(2)}`);
+                        }
                     } else {
                         toast.error("Endereço não encontrado. Será usada uma taxa fixa (R$ 15).");
-                        setShippingFee(15);
+                        const itemsTotal = bag.bag_items.reduce((acc: number, item: any) => acc + (Number(item.products?.price || 0) * item.quantity), 0);
+                        if (freeShippingMin > 0 && itemsTotal >= freeShippingMin) {
+                            setShippingFee(0);
+                        } else {
+                            setShippingFee(15);
+                        }
                     }
                 }
             } catch (error) {

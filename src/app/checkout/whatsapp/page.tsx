@@ -19,10 +19,17 @@ function CheckoutWhatsAppContent() {
     const [shippingFee, setShippingFee] = useState(0);
     const [calculating, setCalculating] = useState(false);
     const [finishing, setFinishing] = useState(false);
+    const [freeShippingMin, setFreeShippingMin] = useState(0);
 
     useEffect(() => {
         if (orderId) fetchOrder();
+        fetchSettings();
     }, [orderId]);
+
+    const fetchSettings = async () => {
+        const { data } = await supabase.from('whatsapp_settings').select('free_shipping_min_order').limit(1).single();
+        if (data?.free_shipping_min_order) setFreeShippingMin(Number(data.free_shipping_min_order));
+    };
 
     const fetchOrder = async () => {
         setLoading(true);
@@ -49,8 +56,14 @@ function CheckoutWhatsAppContent() {
             const coords = await deliveryService.getCoordsFromAddress(address);
             if (coords) {
                 const fee = await deliveryService.calculateFee(coords.lat, coords.lng);
-                setShippingFee(fee);
-                toast.success(`Frete calculado: R$ ${fee.toFixed(2)}`);
+
+                if (freeShippingMin > 0 && order.products.price >= freeShippingMin) {
+                    setShippingFee(0);
+                    toast.success("Parabéns! Você ganhou Frete Grátis.");
+                } else {
+                    setShippingFee(fee);
+                    toast.success(`Frete calculado: R$ ${fee.toFixed(2)}`);
+                }
             } else {
                 toast.error("Endereço não encontrado.");
             }
